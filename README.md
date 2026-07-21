@@ -40,6 +40,38 @@ pnpm dev                    # http://localhost:3000
 | `pnpm test:e2e` | Playwright smoke tests against a built app |
 | `pnpm db:studio` | Prisma Studio GUI for the local database |
 
+## Deploying to Vercel
+
+The repo is set up for zero-config Vercel deployment of a pnpm/Turborepo
+monorepo. One-time project setup:
+
+1. **Import the repo** in Vercel and set **Root Directory** to `apps/web`
+   (Project Settings → General). Vercel still installs from the monorepo
+   root automatically once it detects `pnpm-workspace.yaml`.
+2. **Database** — from the Vercel dashboard, Storage tab → create a Postgres
+   database (Neon-backed). This gives you a pooled and an unpooled/direct
+   connection string. In Project Settings → Environment Variables, set:
+   - `DATABASE_URL` → the **pooled** connection string
+   - `DIRECT_URL` → the **unpooled/direct** connection string
+   (Exact names Vercel auto-injects vary by product version — copy the
+   pooled one into `DATABASE_URL` and the direct one into `DIRECT_URL`, or
+   just reference the existing vars.)
+3. **Other env vars** (Production + Preview): `NEXTAUTH_SECRET`
+   (`openssl rand -base64 32`), `INTEGRATION_WEBHOOK_SECRET`
+   (`openssl rand -hex 32`), `NEXT_PUBLIC_APP_URL` (your production domain).
+   `NEXTAUTH_URL` can stay unset — `trustHost: true` in `auth.ts` makes
+   Auth.js infer it per-deployment, including preview URLs.
+4. **Build command** — already configured via `apps/web/vercel.json`, which
+   runs `prisma migrate deploy` before `next build` on every deployment, so
+   schema changes ship automatically. No dashboard override needed.
+5. `packages/database`'s `prisma generate` runs automatically after install
+   via the root `postinstall` script — nothing else to configure there.
+
+After the first successful deploy, optionally run
+`pnpm --filter @amplifyworld/database seed` against the production
+`DATABASE_URL` (from your machine or a one-off Vercel CLI run) to create a
+demo page.
+
 ## Repository layout
 
 ```
