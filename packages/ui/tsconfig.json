@@ -1,0 +1,9 @@
+{
+  "extends": "@amplifyworld/config/tsconfig/library",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

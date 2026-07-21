@@ -1,0 +1,44 @@
+{
+  "name": "@amplifyworld/web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "clean": "rm -rf .next dist"
+  },
+  "dependencies": {
+    "@amplifyworld/core": "workspace:*",
+    "@amplifyworld/database": "workspace:*",
+    "@amplifyworld/ui": "workspace:*",
+    "@tanstack/react-query": "^5.90.5",
+    "@trpc/client": "^11.7.0",
+    "@trpc/react-query": "^11.7.0",
+    "@trpc/server": "^11.7.0",
+    "next": "^15.5.4",
+    "next-auth": "5.0.0-beta.29",
+    "@auth/prisma-adapter": "^2.10.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "superjson": "^2.2.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@amplifyworld/config": "workspace:*",
+    "@eslint/eslintrc": "^3.3.1",
+    "@playwright/test": "^1.56.1",
+    "@tailwindcss/postcss": "^4.1.16",
+    "@types/node": "^22.19.1",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "eslint-config-next": "^15.5.4",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

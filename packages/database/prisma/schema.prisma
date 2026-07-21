@@ -1,0 +1,262 @@
+// AmplifyWorld Link data model.
+//
+// Design notes for future maintainers:
+// - `Block` is intentionally polymorphic (`type` + freeform `config` Json).
+//   New block kinds (embeds, token-gates, tip jars, etc.) are added in the
+//   `@amplifyworld/core` block registry and DO NOT require a migration here.
+// - `FeatureFlag` supports progressive rollout so new features can ship dark
+//   and be turned on per-environment/per-percentage without a redeploy.
+// - `IntegrationConnection` + `WebhookSubscription` are the seams the rest of
+//   the AmplifyWorld ecosystem (fanwallet, hedera-api, stake) plugs into.
+//   This app never imports those services directly — it only emits domain
+//   events and stores connection metadata, keeping this codebase decoupled
+//   and independently deployable.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth (NextAuth-compatible)
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  ARTIST
+  MANAGER
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  role          UserRole  @default(ARTIST)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts              Account[]
+  sessions              Session[]
+  pages                 Page[]
+  webhookSubscriptions  WebhookSubscription[]
+  integrationConnections IntegrationConnection[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Link pages
+// ---------------------------------------------------------------------------
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Page {
+  id          String     @id @default(cuid())
+  handle      String     @unique // public URL slug, e.g. amplify.world/link/{handle}
+  title       String
+  bio         String?
+  avatarUrl   String?
+  theme       Json       @default("{}") // brand colors/fonts, validated in application code
+  status      PageStatus @default(DRAFT)
+  ownerId     String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  owner            User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  blocks           Block[]
+  subscriptions    FanSubscription[]
+  analyticsEvents  AnalyticsEvent[]
+
+  @@index([ownerId])
+  @@map("pages")
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  pageId    String
+  type      String // matches a registered key in the core block registry
+  position  Int      @default(0)
+  isEnabled Boolean  @default(true)
+  config    Json     @default("{}") // shape owned by each block's zod schema
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page            Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([pageId, position])
+  @@map("blocks")
+}
+
+// ---------------------------------------------------------------------------
+// Fans
+// ---------------------------------------------------------------------------
+
+model Fan {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  walletAddress String?  @unique // populated once linked via an IntegrationConnection (e.g. fanwallet)
+  createdAt     DateTime @default(now())
+
+  subscriptions   FanSubscription[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@map("fans")
+}
+
+model FanSubscription {
+  id             String   @id @default(cuid())
+  pageId         String
+  fanId          String
+  subscribedAt   DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  fan  Fan  @relation(fields: [fanId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, fanId])
+  @@map("fan_subscriptions")
+}
+
+// ---------------------------------------------------------------------------
+// Analytics (provider-agnostic event log; see @amplifyworld/core analytics)
+// ---------------------------------------------------------------------------
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  BLOCK_CLICK
+  FAN_SUBSCRIBED
+  CUSTOM
+}
+
+model AnalyticsEvent {
+  id         String             @id @default(cuid())
+  type       AnalyticsEventType
+  pageId     String
+  blockId    String?
+  fanId      String?
+  metadata   Json               @default("{}")
+  occurredAt DateTime           @default(now())
+
+  page  Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  block Block? @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  fan   Fan?   @relation(fields: [fanId], references: [id], onDelete: SetNull)
+
+  @@index([pageId, occurredAt])
+  @@map("analytics_events")
+}
+
+// ---------------------------------------------------------------------------
+// Feature flags (progressive rollout without redeploys)
+// ---------------------------------------------------------------------------
+
+model FeatureFlag {
+  id                String   @id @default(cuid())
+  key               String   @unique
+  description       String?
+  isEnabled         Boolean  @default(false)
+  rolloutPercentage Int      @default(0) // 0-100, used when isEnabled but not fully rolled out
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("feature_flags")
+}
+
+// ---------------------------------------------------------------------------
+// External integration seams
+// ---------------------------------------------------------------------------
+
+enum IntegrationProvider {
+  HEDERA
+  FANWALLET
+  STAKING
+  CUSTOM
+}
+
+enum IntegrationStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+  ERROR
+}
+
+model IntegrationConnection {
+  id         String              @id @default(cuid())
+  ownerId    String
+  provider   IntegrationProvider
+  externalId String? // id in the external system (e.g. Hedera account id)
+  config     Json                @default("{}")
+  status     IntegrationStatus   @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, provider])
+  @@map("integration_connections")
+}
+
+model WebhookSubscription {
+  id        String   @id @default(cuid())
+  ownerId   String
+  url       String
+  secret    String // used to HMAC-sign outgoing payloads
+  events    String[] // domain event names, e.g. "page.published", "fan.subscribed"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@map("webhook_subscriptions")
+}

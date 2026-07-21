@@ -1,0 +1,102 @@
+import { z } from 'zod';
+import { TRPCError } from '@trpc/server';
+import type { Prisma } from '@amplifyworld/database';
+import { domainEvents } from '@amplifyworld/core';
+import { router, protectedProcedure, publicProcedure } from '../trpc';
+import type { Context } from '../context';
+
+const themeSchema = z.record(z.string(), z.unknown()).default({});
+
+export const pageRouter = router({
+  listMine: protectedProcedure.query(({ ctx }) =>
+    ctx.prisma.page.findMany({
+      where: { ownerId: ctx.session.user.id },
+      orderBy: { updatedAt: 'desc' },
+    }),
+  ),
+
+  getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    const page = await ctx.prisma.page.findUnique({
+      where: { id: input.id },
+      include: { blocks: { orderBy: { position: 'asc' } } },
+    });
+    if (!page || page.ownerId !== ctx.session.user.id) {
+      throw new TRPCError({ code: 'NOT_FOUND' });
+    }
+    return page;
+  }),
+
+  getByHandle: publicProcedure.input(z.object({ handle: z.string() })).query(async ({ ctx, input }) => {
+    const page = await ctx.prisma.page.findUnique({
+      where: { handle: input.handle },
+      include: { blocks: { where: { isEnabled: true }, orderBy: { position: 'asc' } } },
+    });
+    if (!page || page.status !== 'PUBLISHED') {
+      throw new TRPCError({ code: 'NOT_FOUND' });
+    }
+    return page;
+  }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        handle: z
+          .string()
+          .min(3)
+          .max(48)
+          .regex(/^[a-z0-9-]+$/, 'Lowercase letters, numbers, and hyphens only.'),
+        title: z.string().min(1).max(120),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      ctx.prisma.page.create({
+        data: { ...input, ownerId: ctx.session.user.id },
+      }),
+    ),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        title: z.string().min(1).max(120).optional(),
+        bio: z.string().max(500).optional(),
+        avatarUrl: z.string().url().optional(),
+        theme: themeSchema.optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, theme, ...data } = input;
+      await assertOwnership(ctx, id);
+      return ctx.prisma.page.update({
+        where: { id },
+        data: { ...data, ...(theme ? { theme: theme as Prisma.InputJsonValue } : {}) },
+      });
+    }),
+
+  setStatus: protectedProcedure
+    .input(z.object({ id: z.string(), status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']) }))
+    .mutation(async ({ ctx, input }) => {
+      const page = await assertOwnership(ctx, input.id);
+      const updated = await ctx.prisma.page.update({
+        where: { id: input.id },
+        data: { status: input.status },
+      });
+
+      const occurredAt = new Date().toISOString();
+      if (input.status === 'PUBLISHED' && page.status !== 'PUBLISHED') {
+        await domainEvents.publish('page.published', { pageId: page.id, handle: page.handle }, occurredAt);
+      } else if (input.status !== 'PUBLISHED' && page.status === 'PUBLISHED') {
+        await domainEvents.publish('page.unpublished', { pageId: page.id, handle: page.handle }, occurredAt);
+      }
+
+      return updated;
+    }),
+});
+
+async function assertOwnership(ctx: Context & { session: NonNullable<Context['session']> }, pageId: string) {
+  const page = await ctx.prisma.page.findUnique({ where: { id: pageId } });
+  if (!page || page.ownerId !== ctx.session.user.id) {
+    throw new TRPCError({ code: 'NOT_FOUND' });
+  }
+  return page;
+}
