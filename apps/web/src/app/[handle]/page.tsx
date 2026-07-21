@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@amplifyworld/database';
+import { Avatar } from '@amplifyworld/ui';
 import '../../server/bootstrap';
 import { analytics } from '../../server/services/analytics';
 import { BlockRenderer } from '../../components/blocks/BlockRenderer';
@@ -21,20 +22,30 @@ export default async function ArtistPage({ params }: { params: Promise<{ handle:
   await analytics.track({ type: 'PAGE_VIEW', pageId: page.id });
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center gap-6 px-6 py-16">
-      {page.avatarUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={page.avatarUrl} alt={page.title} className="h-24 w-24 rounded-full object-cover" />
-      ) : null}
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold">{page.title}</h1>
-        {page.bio ? <p className="mt-1 text-white/70">{page.bio}</p> : null}
+    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center gap-8 px-6 py-16 sm:py-20">
+      <div className="flex animate-fade-up flex-col items-center gap-4 text-center">
+        <Avatar src={page.avatarUrl} name={page.title} size="xl" ring />
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{page.title}</h1>
+          {page.bio ? <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-white/60">{page.bio}</p> : null}
+        </div>
       </div>
+
       <div className="flex w-full flex-col gap-3">
-        {page.blocks.map((block) => (
-          <BlockRenderer key={block.id} block={block} />
+        {page.blocks.map((block, index) => (
+          <div
+            key={block.id}
+            className="animate-fade-up"
+            style={{ animationDelay: `${Math.min(index, 6) * 60 + 100}ms` }}
+          >
+            <BlockRenderer block={block} />
+          </div>
         ))}
       </div>
+
+      <footer className="mt-4 animate-fade-up text-xs text-white/30" style={{ animationDelay: '400ms' }}>
+        Powered by <span className="font-medium text-white/50">AmplifyWorld</span>
+      </footer>
     </main>
   );
 }

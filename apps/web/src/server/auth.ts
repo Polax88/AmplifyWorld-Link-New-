@@ -12,6 +12,10 @@ import { prisma, type UserRole } from '@amplifyworld/database';
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: 'database' },
+  // This app is expected to run behind a reverse proxy/load balancer (its
+  // own Host header isn't the public one) — trust it and rely on the
+  // proxy/network layer to keep external requests from spoofing that header.
+  trustHost: true,
   providers: [],
   pages: {
     signIn: '/login',

@@ -1,7 +1,7 @@
 'use client';
 
+import { Heart } from 'lucide-react';
 import type { TipJarBlockConfig } from '@amplifyworld/core';
-import { Button } from '@amplifyworld/ui';
 import { trpc } from '../../lib/trpc/client';
 
 export function TipJarBlockView({
@@ -21,11 +21,10 @@ export function TipJarBlockView({
       target="_blank"
       rel="noreferrer"
       onClick={() => trackClick.mutate({ pageId, blockId, blockType: 'tip-jar' })}
-      className="block w-full"
+      className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-brand-400 to-accent px-5 py-4 text-sm font-semibold text-white shadow-glow transition-all duration-150 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0"
     >
-      <Button variant="primary" className="w-full">
-        {config.label}
-      </Button>
+      <Heart className="size-4 fill-white/90 transition-transform group-hover:scale-110" />
+      {config.label}
     </a>
   );
 }

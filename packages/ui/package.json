@@ -11,6 +11,10 @@
   "peerDependencies": {
     "react": "^19.2.0"
   },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "lucide-react": "^0.545.0"
+  },
   "devDependencies": {
     "@amplifyworld/config": "workspace:*",
     "@types/react": "^19.2.7",
