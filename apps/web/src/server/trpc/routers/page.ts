@@ -12,6 +12,9 @@ export const pageRouter = router({
     ctx.prisma.page.findMany({
       where: { ownerId: ctx.session.user.id },
       orderBy: { updatedAt: 'desc' },
+      // Cheap total-engagement count for the list view; the editor's
+      // header shows the precise view/click breakdown (analytics.summaryForPage).
+      include: { _count: { select: { analyticsEvents: true } } },
     }),
   ),
 

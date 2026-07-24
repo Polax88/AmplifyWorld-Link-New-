@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, ExternalLink } from 'lucide-react';
+import { Plus, ExternalLink, Activity } from 'lucide-react';
 import { Button, Card, Badge, Input, Modal, Skeleton } from '@amplifyworld/ui';
 import { trpc } from '../../lib/trpc/client';
 import { useDashboardContext } from '../../components/DashboardContext';
@@ -54,7 +54,15 @@ export default function DashboardPage() {
                     {page.status === 'PUBLISHED' ? <ExternalLink className="size-3" /> : null}
                   </p>
                 </div>
-                <Badge tone={statusTone[page.status]}>{page.status}</Badge>
+                <div className="flex items-center gap-3">
+                  {page._count.analyticsEvents > 0 ? (
+                    <span className="flex items-center gap-1 text-xs text-white/40">
+                      <Activity className="size-3" />
+                      {page._count.analyticsEvents}
+                    </span>
+                  ) : null}
+                  <Badge tone={statusTone[page.status]}>{page.status}</Badge>
+                </div>
               </Card>
             </Link>
           ))}

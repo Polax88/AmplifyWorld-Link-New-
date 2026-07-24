@@ -11,7 +11,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import { ArrowLeft, Smartphone } from 'lucide-react';
+import { ArrowLeft, Smartphone, Eye, MousePointerClick } from 'lucide-react';
 import { Button, Card, IconButton, Modal } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
 import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
@@ -28,6 +28,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
 
   const pageQuery = trpc.page.getById.useQuery({ id: pageId });
   const page = pageQuery.data;
+  const summary = trpc.analytics.summaryForPage.useQuery({ pageId });
 
   const invalidatePage = () => utils.page.getById.invalidate({ id: pageId });
   const blockTypes = trpc.block.listAvailableTypes.useQuery();
@@ -96,6 +97,19 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
             </Button>
           </div>
         </div>
+
+        {summary.data ? (
+          <div className="-mt-2 flex items-center gap-4 text-sm text-white/50">
+            <span className="flex items-center gap-1.5">
+              <Eye className="size-3.5" />
+              {summary.data.views} {summary.data.views === 1 ? 'view' : 'views'}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <MousePointerClick className="size-3.5" />
+              {summary.data.clicks} {summary.data.clicks === 1 ? 'click' : 'clicks'}
+            </span>
+          </div>
+        ) : null}
 
         <section>
           <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-white/50">Add a block</h2>
