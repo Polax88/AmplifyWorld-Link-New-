@@ -61,4 +61,19 @@ describe('BlockRegistry', () => {
       'tip-jar',
     ]);
   });
+
+  it('every core block type\'s defaultConfig satisfies its own configSchema', () => {
+    // Regression test: `defaultConfig` is parsed through `configSchema` the
+    // moment a block is added (before a user edits anything) — a
+    // defaultConfig that fails its own schema breaks "Add a block" outright.
+    const registry = new BlockRegistry();
+    registerCoreBlocks(registry);
+
+    for (const definition of registry.list()) {
+      expect(
+        () => definition.configSchema.parse(definition.defaultConfig),
+        `${definition.type}'s defaultConfig must satisfy its own configSchema`,
+      ).not.toThrow();
+    }
+  });
 });

@@ -1,12 +1,12 @@
-import { blockRegistry, registerCoreBlocks } from '@amplifyworld/core';
+import { blockRegistry, registerCoreBlocks, templateRegistry, registerCoreTemplates } from '@amplifyworld/core';
 import { registerWebhookDispatcher } from './services/webhook-dispatcher';
 
 let bootstrapped = false;
 
 /**
  * Wires up everything that needs to happen once per process: registering
- * block types and subscribing the webhook dispatcher to domain events.
- * Idempotent so it's safe to call from multiple entry points (route
+ * block/template types and subscribing the webhook dispatcher to domain
+ * events. Idempotent so it's safe to call from multiple entry points (route
  * handlers, server components) in dev's hot-reload environment.
  */
 export function bootstrap(): void {
@@ -14,6 +14,7 @@ export function bootstrap(): void {
   bootstrapped = true;
 
   registerCoreBlocks(blockRegistry);
+  registerCoreTemplates(templateRegistry);
   registerWebhookDispatcher();
 }
 

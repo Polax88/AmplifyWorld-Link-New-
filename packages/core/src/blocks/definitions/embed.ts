@@ -14,5 +14,8 @@ export const embedBlock = defineBlock<EmbedBlockConfig>({
   displayName: 'Media embed',
   description: 'An inline player for a track, video, or playlist.',
   configSchema,
-  defaultConfig: { provider: 'spotify', embedUrl: 'https://' },
+  // Must satisfy configSchema on its own — this is parsed through
+  // `blockRegistry.parseConfig` the moment a block is added, before a user
+  // has edited anything.
+  defaultConfig: { provider: 'spotify', embedUrl: 'https://open.spotify.com' },
 });

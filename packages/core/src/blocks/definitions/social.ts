@@ -22,5 +22,8 @@ export const socialBlock = defineBlock<SocialBlockConfig>({
   displayName: 'Social profile',
   description: 'A branded icon linking out to a social or streaming profile.',
   configSchema,
-  defaultConfig: { platform: 'instagram', handle: '', url: 'https://' },
+  // Must satisfy configSchema on its own — this is parsed through
+  // `blockRegistry.parseConfig` the moment a block is added, before a user
+  // has edited anything.
+  defaultConfig: { platform: 'instagram', handle: 'yourhandle', url: 'https://instagram.com/yourhandle' },
 });

@@ -3,6 +3,7 @@ import { pageRouter } from './page';
 import { blockRouter } from './block';
 import { analyticsRouter } from './analytics';
 import { featureFlagRouter } from './feature-flag';
+import { onboardingRouter } from './onboarding';
 
 /**
  * Root router. Add a new domain (e.g. `fan`, `integration`) by creating
@@ -15,6 +16,7 @@ export const appRouter = router({
   block: blockRouter,
   analytics: analyticsRouter,
   featureFlag: featureFlagRouter,
+  onboarding: onboardingRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, ExternalLink } from 'lucide-react';
 import { Button, Card, Badge, Input, Modal, Skeleton } from '@amplifyworld/ui';
 import { trpc } from '../../lib/trpc/client';
+import { useDashboardContext } from '../../components/DashboardContext';
 
 const statusTone = {
   DRAFT: 'neutral',
@@ -14,6 +16,8 @@ const statusTone = {
 
 export default function DashboardPage() {
   const [createOpen, setCreateOpen] = useState(false);
+  const router = useRouter();
+  const { aiWizardEnabled } = useDashboardContext();
 
   const utils = trpc.useUtils();
   const pages = trpc.page.listMine.useQuery();
@@ -25,7 +29,10 @@ export default function DashboardPage() {
           <h1 className="text-xl font-semibold">Your pages</h1>
           <p className="mt-1 text-sm text-white/50">Manage the link pages you share with fans.</p>
         </div>
-        <Button icon={<Plus className="size-4" />} onClick={() => setCreateOpen(true)}>
+        <Button
+          icon={<Plus className="size-4" />}
+          onClick={() => (aiWizardEnabled ? router.push('/dashboard/new') : setCreateOpen(true))}
+        >
           New page
         </Button>
       </div>

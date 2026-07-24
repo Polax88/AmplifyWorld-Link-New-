@@ -24,10 +24,14 @@ export const gatedContentBlock = defineBlock<GatedContentBlockConfig>({
   description:
     'Content unlocked via an external integration (wallet, staking, allowlist). Eligibility is resolved by the connected service, not by this app.',
   configSchema,
+  // Must satisfy configSchema on its own — this is parsed through
+  // `blockRegistry.parseConfig` the moment a block is added, before a user
+  // has edited anything. `integrationConnectionId` is a clear placeholder;
+  // there's no real connection to reference by default.
   defaultConfig: {
     label: 'Exclusive content',
-    integrationConnectionId: '',
-    unlockedUrl: 'https://',
+    integrationConnectionId: 'not-yet-connected',
+    unlockedUrl: 'https://example.com',
     lockedMessage: 'Connect to unlock this content.',
   },
 });

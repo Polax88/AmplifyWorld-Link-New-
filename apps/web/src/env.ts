@@ -15,6 +15,14 @@ const envSchema = z.object({
   // Shared placeholder secret for verifying inbound integration webhooks.
   // Production should move to a per-IntegrationConnection secret instead.
   INTEGRATION_WEBHOOK_SECRET: z.string().min(1),
+
+  // Onboarding wizard AI assistance. Optional — when unset, the wizard falls
+  // back to template-only drafts instead of erroring (see ai-assistant.ts).
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  // Onboarding wizard Spotify profile import. Optional — when unset, the
+  // "search Spotify" affordance just returns no results (see profile-import).
+  SPOTIFY_CLIENT_ID: z.string().min(1).optional(),
+  SPOTIFY_CLIENT_SECRET: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

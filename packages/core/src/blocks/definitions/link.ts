@@ -14,5 +14,8 @@ export const linkBlock = defineBlock<LinkBlockConfig>({
   displayName: 'Link',
   description: 'A single call-to-action link — streaming, merch, tickets, tour dates.',
   configSchema,
-  defaultConfig: { label: 'New link', url: 'https://' },
+  // Must satisfy configSchema on its own — this is parsed through
+  // `blockRegistry.parseConfig` the moment a block is added, before a user
+  // has edited anything.
+  defaultConfig: { label: 'New link', url: 'https://example.com' },
 });

@@ -48,6 +48,17 @@ async function main() {
     update: {},
   });
 
+  await prisma.featureFlag.upsert({
+    where: { key: 'ai-onboarding-wizard' },
+    create: {
+      key: 'ai-onboarding-wizard',
+      description: 'Route "New page" to the AI-assisted onboarding wizard instead of the blank-canvas modal.',
+      isEnabled: true,
+      rolloutPercentage: 100,
+    },
+    update: {},
+  });
+
   console.log(`Seeded demo page: /${page.handle}`);
 }
 

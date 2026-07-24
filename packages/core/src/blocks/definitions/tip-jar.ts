@@ -14,5 +14,8 @@ export const tipJarBlock = defineBlock<TipJarBlockConfig>({
   displayName: 'Tip jar',
   description: 'A link out to an external checkout for fan support/tips.',
   configSchema,
-  defaultConfig: { label: 'Support this artist', checkoutUrl: 'https://' },
+  // Must satisfy configSchema on its own — this is parsed through
+  // `blockRegistry.parseConfig` the moment a block is added, before a user
+  // has edited anything.
+  defaultConfig: { label: 'Support this artist', checkoutUrl: 'https://example.com/tip' },
 });
