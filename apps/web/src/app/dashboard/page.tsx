@@ -86,15 +86,28 @@ function CreatePageModal({
 }) {
   const [handle, setHandle] = useState('');
   const [title, setTitle] = useState('');
+  const [useTemplate, setUseTemplate] = useState(false);
 
+  // Only one template exists today, so this is a single checkbox rather than
+  // a picker — revisit as a proper selector once there's more than one.
+  const templates = trpc.page.listAvailableTemplates.useQuery();
+  const starterTemplate = templates.data?.[0];
+
+  const applyTemplate = trpc.page.applyTemplate.useMutation();
   const createPage = trpc.page.create.useMutation({
-    onSuccess: () => {
+    onSuccess: async (page) => {
+      if (useTemplate && starterTemplate) {
+        await applyTemplate.mutateAsync({ pageId: page.id, templateKey: starterTemplate.key });
+      }
       onCreated();
       onOpenChange(false);
       setHandle('');
       setTitle('');
+      setUseTemplate(false);
     },
   });
+
+  const busy = createPage.isPending || applyTemplate.isPending;
 
   return (
     <Modal open={open} onOpenChange={onOpenChange} title="New page" description="Pick a handle for your public link.">
@@ -122,10 +135,24 @@ function CreatePageModal({
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
+        {starterTemplate ? (
+          <label className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <input
+              type="checkbox"
+              checked={useTemplate}
+              onChange={(event) => setUseTemplate(event.target.checked)}
+              className="mt-0.5 size-4 rounded border-white/20 bg-transparent accent-brand-500"
+            />
+            <span className="text-sm text-white/70">
+              Start from the <strong className="text-white">{starterTemplate.displayName}</strong> template —{' '}
+              {starterTemplate.description}
+            </span>
+          </label>
+        ) : null}
         {createPage.error ? (
           <p className="text-xs text-red-400">{createPage.error.message}</p>
         ) : null}
-        <Button type="submit" loading={createPage.isPending} className="w-full">
+        <Button type="submit" loading={busy} className="w-full">
           Create page
         </Button>
       </form>

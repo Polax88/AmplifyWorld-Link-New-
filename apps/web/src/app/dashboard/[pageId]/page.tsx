@@ -2,17 +2,29 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ChevronUp, ChevronDown, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
-import { Button, Card, IconButton, Badge } from '@amplifyworld/ui';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { ArrowLeft, Smartphone } from 'lucide-react';
+import { Button, Card, IconButton, Modal } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
 import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
 import { BlockConfigForm } from '../../../components/blocks/BlockConfigForm';
 import { PagePreview } from '../../../components/PagePreview';
+import { SortableBlockCard } from './SortableBlockCard';
 
 export default function PageEditor({ params }: { params: Promise<{ pageId: string }> }) {
   const { pageId } = use(params);
   const utils = trpc.useUtils();
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const pageQuery = trpc.page.getById.useQuery({ id: pageId });
   const page = pageQuery.data;
@@ -35,13 +47,14 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
     return <p className="text-white/50">Loading…</p>;
   }
 
-  function move(index: number, direction: -1 | 1) {
-    if (!page) return;
-    const ids = page.blocks.map((b) => b.id);
-    const target = index + direction;
-    if (target < 0 || target >= ids.length) return;
-    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
-    reorder.mutate({ pageId, orderedBlockIds: ids });
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!page || !over || active.id === over.id) return;
+    const oldIndex = page.blocks.findIndex((b) => b.id === active.id);
+    const newIndex = page.blocks.findIndex((b) => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(page.blocks, oldIndex, newIndex);
+    reorder.mutate({ pageId, orderedBlockIds: reordered.map((b) => b.id) });
   }
 
   return (
@@ -59,18 +72,29 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
               <p className="text-sm text-white/50">amplify.world/{page.handle}</p>
             </div>
           </div>
-          <Button
-            variant={page.status === 'PUBLISHED' ? 'secondary' : 'primary'}
-            loading={setStatus.isPending}
-            onClick={() =>
-              setStatus.mutate({
-                id: page.id,
-                status: page.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED',
-              })
-            }
-          >
-            {page.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<Smartphone className="size-3.5" />}
+              className="lg:hidden"
+              onClick={() => setMobilePreviewOpen(true)}
+            >
+              Preview
+            </Button>
+            <Button
+              variant={page.status === 'PUBLISHED' ? 'secondary' : 'primary'}
+              loading={setStatus.isPending}
+              onClick={() =>
+                setStatus.mutate({
+                  id: page.id,
+                  status: page.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED',
+                })
+              }
+            >
+              {page.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+            </Button>
+          </div>
         </div>
 
         <section>
@@ -101,90 +125,44 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
               No blocks yet — add one above.
             </Card>
           ) : null}
-          {page.blocks.map((block, index) => {
-            const Icon = blockTypeIcon[block.type];
-            const isEditing = editingBlockId === block.id;
-            return (
-              <Card key={block.id} className="flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5">
-                    {Icon ? (
-                      <span className="flex size-8 items-center justify-center rounded-full bg-white/8 text-white/60">
-                        <Icon className="size-4" />
-                      </span>
-                    ) : null}
-                    <div>
-                      <p className="text-sm font-medium capitalize text-white">
-                        {block.type.replace('-', ' ')}
-                      </p>
-                      {!block.isEnabled ? (
-                        <Badge tone="neutral" className="mt-0.5">
-                          Hidden
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <IconButton
-                      aria-label="Move up"
-                      size="sm"
-                      disabled={index === 0}
-                      onClick={() => move(index, -1)}
-                    >
-                      <ChevronUp className="size-4" />
-                    </IconButton>
-                    <IconButton
-                      aria-label="Move down"
-                      size="sm"
-                      disabled={index === page.blocks.length - 1}
-                      onClick={() => move(index, 1)}
-                    >
-                      <ChevronDown className="size-4" />
-                    </IconButton>
-                    <IconButton
-                      aria-label={block.isEnabled ? 'Hide block' : 'Show block'}
-                      size="sm"
-                      onClick={() => setEnabled.mutate({ id: block.id, isEnabled: !block.isEnabled })}
-                    >
-                      {block.isEnabled ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-                    </IconButton>
-                    <IconButton
-                      aria-label="Edit block"
-                      size="sm"
-                      onClick={() => setEditingBlockId(isEditing ? null : block.id)}
-                    >
-                      <Pencil className="size-4" />
-                    </IconButton>
-                    <IconButton
-                      aria-label="Delete block"
-                      size="sm"
-                      variant="danger"
-                      onClick={() => deleteBlock.mutate({ id: block.id })}
-                    >
-                      <Trash2 className="size-4" />
-                    </IconButton>
-                  </div>
-                </div>
-
-                {isEditing ? (
-                  <div className="border-t border-white/10 pt-3">
-                    <BlockConfigForm
-                      type={block.type}
-                      config={block.config}
-                      saving={updateConfig.isPending}
-                      onSave={(config) => updateConfig.mutate({ id: block.id, config })}
-                    />
-                  </div>
-                ) : null}
-              </Card>
-            );
-          })}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={page.blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+              {page.blocks.map((block) => (
+                <SortableBlockCard
+                  key={block.id}
+                  id={block.id}
+                  type={block.type}
+                  isEnabled={block.isEnabled}
+                  isEditing={editingBlockId === block.id}
+                  onToggleEnabled={() => setEnabled.mutate({ id: block.id, isEnabled: !block.isEnabled })}
+                  onToggleEdit={() => setEditingBlockId(editingBlockId === block.id ? null : block.id)}
+                  onDelete={() => deleteBlock.mutate({ id: block.id })}
+                >
+                  <BlockConfigForm
+                    type={block.type}
+                    config={block.config}
+                    saving={updateConfig.isPending}
+                    onSave={(config) => updateConfig.mutate({ id: block.id, config })}
+                  />
+                </SortableBlockCard>
+              ))}
+            </SortableContext>
+          </DndContext>
         </section>
       </div>
 
       <div className="hidden justify-self-center lg:sticky lg:top-24 lg:flex">
         <PagePreview title={page.title} bio={page.bio} avatarUrl={page.avatarUrl} blocks={page.blocks} />
       </div>
+
+      <Modal
+        open={mobilePreviewOpen}
+        onOpenChange={setMobilePreviewOpen}
+        title="Live preview"
+        className="flex w-auto max-w-none justify-center border-none bg-transparent p-0 shadow-none"
+      >
+        <PagePreview title={page.title} bio={page.bio} avatarUrl={page.avatarUrl} blocks={page.blocks} />
+      </Modal>
     </div>
   );
 }

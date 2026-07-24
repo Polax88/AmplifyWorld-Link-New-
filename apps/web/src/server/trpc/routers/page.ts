@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import type { Prisma } from '@amplifyworld/database';
-import { domainEvents } from '@amplifyworld/core';
+import { domainEvents, blockRegistry, templateRegistry } from '@amplifyworld/core';
 import { router, protectedProcedure, publicProcedure } from '../trpc';
 import type { Context } from '../context';
 
@@ -13,6 +13,15 @@ export const pageRouter = router({
       where: { ownerId: ctx.session.user.id },
       orderBy: { updatedAt: 'desc' },
     }),
+  ),
+
+  /** Metadata for every registered starter template, used by the "start from template" option. */
+  listAvailableTemplates: publicProcedure.query(() =>
+    templateRegistry.list().map((template) => ({
+      key: template.key,
+      displayName: template.displayName,
+      description: template.description,
+    })),
   ),
 
   getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
@@ -90,6 +99,45 @@ export const pageRouter = router({
       }
 
       return updated;
+    }),
+
+  /**
+   * Seeds a freshly-created (empty) page with a starter template's blocks —
+   * the quick alternative to the AI onboarding wizard for the blank-canvas
+   * "New page" flow. Slots the template can't fill without artist input
+   * (e.g. social handles) are silently skipped rather than shipped invalid;
+   * the wizard is the richer path for that.
+   */
+  applyTemplate: protectedProcedure
+    .input(z.object({ pageId: z.string(), templateKey: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnership(ctx, input.pageId);
+      const template = templateRegistry.require(input.templateKey);
+
+      const validatedBlocks = template.blocks.flatMap((seed) => {
+        try {
+          return [{ type: seed.type, config: blockRegistry.parseConfig(seed.type, seed.config) }];
+        } catch {
+          return [];
+        }
+      });
+
+      if (validatedBlocks.length === 0) return { success: true };
+
+      await ctx.prisma.$transaction(
+        validatedBlocks.map((block, position) =>
+          ctx.prisma.block.create({
+            data: {
+              pageId: input.pageId,
+              type: block.type,
+              config: block.config as Prisma.InputJsonValue,
+              position,
+            },
+          }),
+        ),
+      );
+
+      return { success: true };
     }),
 });
 
