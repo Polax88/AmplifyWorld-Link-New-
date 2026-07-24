@@ -8,13 +8,17 @@ import { z } from 'zod';
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  DATABASE_URL: z.string().url(),
-  NEXTAUTH_SECRET: z.string().min(1),
+  // DEMO MODE: the app runs on an in-memory store, so a real database URL and
+  // auth secret aren't required. These are optional with safe demo defaults so
+  // nothing crashes when they're unset. Restore `.url()` / `.min(1)` (without
+  // defaults) once a live database and real auth are reconnected.
+  DATABASE_URL: z.string().optional(),
+  NEXTAUTH_SECRET: z.string().min(1).default('amplifyworld-demo-secret'),
   NEXTAUTH_URL: z.string().url().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
   // Shared placeholder secret for verifying inbound integration webhooks.
   // Production should move to a per-IntegrationConnection secret instead.
-  INTEGRATION_WEBHOOK_SECRET: z.string().min(1),
+  INTEGRATION_WEBHOOK_SECRET: z.string().min(1).default('amplifyworld-demo-webhook-secret'),
 
   // Onboarding wizard AI assistance. Optional — when unset, the wizard falls
   // back to template-only drafts instead of erroring (see ai-assistant.ts).
