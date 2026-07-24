@@ -1,6 +1,10 @@
 {
   "extends": "@amplifyworld/config/tsconfig/library",
   "compilerOptions": {
+    // This package renders in the browser (unlike @amplifyworld/core, which
+    // shares the same base library preset but must stay environment-agnostic) —
+    // override just here rather than widening the shared preset.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
     "outDir": "dist",
     "rootDir": "src"

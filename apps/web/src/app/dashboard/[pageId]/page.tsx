@@ -17,6 +17,7 @@ import { trpc } from '../../../lib/trpc/client';
 import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
 import { BlockConfigForm } from '../../../components/blocks/BlockConfigForm';
 import { PagePreview } from '../../../components/PagePreview';
+import { ShareQrButton } from '../../../components/ShareQrButton';
 import { SortableBlockCard } from './SortableBlockCard';
 
 export default function PageEditor({ params }: { params: Promise<{ pageId: string }> }) {
@@ -74,6 +75,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <ShareQrButton handle={page.handle} />
             <Button
               variant="outline"
               size="sm"

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Check, Copy, PartyPopper } from 'lucide-react';
-import { Button, Card } from '@amplifyworld/ui';
+import { Button, Card, QrCode } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
 
 export function SuccessStep({ pageId, handle }: { pageId: string; handle: string }) {
@@ -30,6 +30,8 @@ export function SuccessStep({ pageId, handle }: { pageId: string; handle: string
           It&apos;s saved as a draft — publish it whenever you&apos;re ready to share.
         </p>
       </div>
+
+      <QrCode value={url} size={140} downloadable downloadFileName={`${handle}-qr.png`} />
 
       <Card className="flex w-full items-center justify-between gap-3">
         <span className="truncate text-sm text-white/80">{url}</span>
