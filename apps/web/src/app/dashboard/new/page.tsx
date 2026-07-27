@@ -21,7 +21,7 @@ export default function OnboardingWizardPage() {
           setState(nextState);
           setStep('review');
         }}
-        onSkip={() => router.push('/dashboard')}
+        onSkip={() => router.push('/dashboard?view=all')}
       />
     );
   }

@@ -55,8 +55,10 @@ export function MomentumPanel({ pageId }: { pageId: string }) {
   if (!momentum.data?.current) {
     return (
       <Card className="gap-1 text-sm text-white/50">
-        <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Artist Momentum</span>
-        <p>Score appears after your page gets its first day of traffic.</p>
+        <span className="text-xs font-semibold uppercase tracking-wide text-white/40">
+          Artist Momentum Index (AMI)
+        </span>
+        <p>Your AMI score appears after your page gets its first day of traffic.</p>
       </Card>
     );
   }
@@ -69,7 +71,9 @@ export function MomentumPanel({ pageId }: { pageId: string }) {
   return (
     <Card className="gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-white/40">Artist Momentum</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-white/40">
+          Artist Momentum Index (AMI)
+        </span>
         <Badge tone={tone}>
           <Icon className="size-3" />
           {change > 0 ? '+' : ''}
@@ -80,7 +84,7 @@ export function MomentumPanel({ pageId }: { pageId: string }) {
         <span className="text-3xl font-semibold tabular-nums">{current.score}</span>
         <Sparkline values={history.map((h) => h.score)} width={160} height={44} />
       </div>
-      <p className="text-xs text-white/40">30-day trend · 0-100 momentum score</p>
+      <p className="text-xs text-white/40">30-day trend · 0-100 AMI score</p>
 
       <div className="mt-1 flex flex-col gap-1.5 border-t border-white/8 pt-3">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">

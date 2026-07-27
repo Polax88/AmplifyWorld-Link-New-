@@ -35,7 +35,7 @@ export function NotificationBell() {
           ) : null}
         </span>
       </IconButton>
-      <Modal open={open} onOpenChange={handleOpenChange} title="Momentum alerts">
+      <Modal open={open} onOpenChange={handleOpenChange} title="AMI alerts">
         <div className="flex flex-col gap-2">
           {alerts.data?.length ? (
             alerts.data.map((alert) => (

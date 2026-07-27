@@ -8,27 +8,27 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Brand: violet primary with a pink/orange accent for gradients. */
-  --color-brand-50: #f4f1ff;
-  --color-brand-400: #a78bfa;
-  --color-brand-500: #8b5cf6;
-  --color-brand-600: #7c3aed;
-  --color-brand-700: #6d28d9;
+  /* Brand: AmplifyWorld's official pink (#f50057), per amplifyworld.ai. */
+  --color-brand-50: #ffe4ec;
+  --color-brand-400: #ff4081;
+  --color-brand-500: #f50057;
+  --color-brand-600: #c9004a;
+  --color-brand-700: #99003a;
   --color-brand: var(--color-brand-500);
-  --color-accent: #f472b6;
+  --color-accent: #ff5c93;
 
   --color-canvas: #08070c;
   --color-surface: #100e18;
   --color-surface-raised: #17141f;
 
-  --shadow-glow: 0 0 0 1px rgb(139 92 246 / 0.15), 0 8px 30px -8px rgb(139 92 246 / 0.35);
+  --shadow-glow: 0 0 0 1px rgb(245 0 87 / 0.15), 0 8px 30px -8px rgb(245 0 87 / 0.35);
 }
 
 @layer base {
   body {
     background:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgb(139 92 246 / 0.25), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgb(244 114 182 / 0.12), transparent),
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgb(245 0 87 / 0.25), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgb(255 92 147 / 0.12), transparent),
       var(--color-canvas);
     background-attachment: fixed;
   }

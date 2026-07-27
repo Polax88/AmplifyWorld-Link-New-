@@ -4,6 +4,7 @@ export * from './components/Input';
 export * from './components/Select';
 export * from './components/Badge';
 export * from './components/Avatar';
+export * from './components/Logo';
 export * from './components/Modal';
 export * from './components/IconButton';
 export * from './components/Skeleton';

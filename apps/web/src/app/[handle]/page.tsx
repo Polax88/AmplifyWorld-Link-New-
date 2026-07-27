@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@amplifyworld/database';
-import { Avatar } from '@amplifyworld/ui';
+import { Avatar, Logo } from '@amplifyworld/ui';
 import '../../server/bootstrap';
 import { analytics } from '../../server/services/analytics';
 import { getRequestSignals } from '../../server/services/request-signals';
@@ -45,8 +45,11 @@ export default async function ArtistPage({ params }: { params: Promise<{ handle:
         ))}
       </div>
 
-      <footer className="mt-4 animate-fade-up text-xs text-white/30" style={{ animationDelay: '400ms' }}>
-        Powered by <span className="font-medium text-white/50">AmplifyWorld</span>
+      <footer
+        className="mt-4 flex animate-fade-up items-center gap-1.5 text-xs text-white/30"
+        style={{ animationDelay: '400ms' }}
+      >
+        Powered by <Logo height={12} className="opacity-60" />
       </footer>
     </main>
   );

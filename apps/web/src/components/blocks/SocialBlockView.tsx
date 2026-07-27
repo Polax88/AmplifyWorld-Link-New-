@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { SocialBlockConfig } from '@amplifyworld/core';
 
-const platformIcon: Record<SocialBlockConfig['platform'], LucideIcon> = {
+export const platformIcon: Record<SocialBlockConfig['platform'], LucideIcon> = {
   instagram: Instagram,
   youtube: Youtube,
   spotify: Music2,

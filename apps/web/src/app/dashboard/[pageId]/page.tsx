@@ -12,6 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { ArrowLeft, Smartphone, Eye, MousePointerClick } from 'lucide-react';
+import type { SocialBlockConfig } from '@amplifyworld/core';
 import { Button, Card, IconButton, Modal } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
 import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
@@ -19,7 +20,7 @@ import { BlockConfigForm } from '../../../components/blocks/BlockConfigForm';
 import { PagePreview } from '../../../components/PagePreview';
 import { ShareQrButton } from '../../../components/ShareQrButton';
 import { MomentumPanel } from '../../../components/MomentumPanel';
-import { ConnectViberateButton } from '../../../components/ConnectViberateButton';
+import { ConnectedPlatformsCard } from '../../../components/ConnectedPlatformsCard';
 import { useDashboardContext } from '../../../components/DashboardContext';
 import { SortableBlockCard } from './SortableBlockCard';
 
@@ -68,12 +69,13 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard">
-              <IconButton aria-label="Back to pages" variant="secondary">
+            <Link href="/dashboard?view=all">
+              <IconButton aria-label="Your pages" variant="secondary">
                 <ArrowLeft className="size-4" />
               </IconButton>
             </Link>
             <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-400">Your artist hub</p>
               <h1 className="text-lg font-semibold leading-tight">{page.title}</h1>
               <p className="text-sm text-white/50">amplify.world/{page.handle}</p>
             </div>
@@ -119,10 +121,24 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
 
         <MomentumPanel pageId={pageId} />
 
-        {viberateEnabled && !page.viberateArtistId ? <ConnectViberateButton pageId={pageId} /> : null}
+        <ConnectedPlatformsCard
+          pageId={pageId}
+          socialBlocks={page.blocks
+            .filter((block) => block.type === 'social')
+            .map((block) => ({ id: block.id, config: block.config as SocialBlockConfig }))}
+          viberateEnabled={viberateEnabled}
+          viberateArtistId={page.viberateArtistId}
+          viberateConnectedAt={page.viberateConnectedAt}
+        />
 
-        <section>
-          <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-white/50">Add a block</h2>
+        <section className="flex flex-col gap-3">
+          <div>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-white/50">Smart links</h2>
+            <p className="mt-0.5 text-xs text-white/35">
+              Everything a fan sees on your page, in the order they see it.
+            </p>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             {blockTypes.data?.map((type) => {
               const Icon = blockTypeIcon[type.type];
@@ -140,13 +156,10 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
               );
             })}
           </div>
-        </section>
 
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-white/50">Blocks</h2>
           {page.blocks.length === 0 ? (
             <Card className="items-center py-8 text-center text-sm text-white/50">
-              No blocks yet — add one above.
+              No smart links yet — add one above.
             </Card>
           ) : null}
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

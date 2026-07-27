@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Avatar } from '@amplifyworld/ui';
+import { Avatar, Logo } from '@amplifyworld/ui';
 import { auth } from '../../server/auth';
 import { featureFlags } from '../../server/services/feature-flags';
 import { DashboardProvider } from '../../components/DashboardContext';
@@ -19,8 +19,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-canvas/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" className="text-sm font-semibold tracking-tight">
-            AmplifyWorld Link
+          <Link href="/dashboard" aria-label="AmplifyWorld Link home">
+            <Logo height={20} />
           </Link>
           <div className="flex items-center gap-4">
             {session.user.role === 'ADMIN' ? (

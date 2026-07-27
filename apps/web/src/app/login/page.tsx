@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { KeyRound } from 'lucide-react';
-import { Button, Card } from '@amplifyworld/ui';
+import { Button, Card, Logo } from '@amplifyworld/ui';
 import { signIn } from '../../server/auth';
 import { env } from '../../env';
 
@@ -9,6 +9,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col items-center justify-center gap-5 px-6 text-center">
+      <Logo height={24} />
       <span className="flex size-12 items-center justify-center rounded-full bg-brand-500/15 text-brand-400">
         <KeyRound className="size-5" />
       </span>

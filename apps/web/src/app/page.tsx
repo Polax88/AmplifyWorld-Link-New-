@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Link2, HeartHandshake, BarChart3, ArrowRight } from 'lucide-react';
-import { Button } from '@amplifyworld/ui';
+import { Button, Logo } from '@amplifyworld/ui';
 
 const features = [
   {
@@ -24,7 +24,7 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col px-6">
       <nav className="flex items-center justify-between py-8">
-        <span className="text-sm font-semibold tracking-tight">AmplifyWorld Link</span>
+        <Logo height={22} />
         <Link href="/dashboard">
           <Button variant="outline" size="sm">
             Dashboard
@@ -33,7 +33,7 @@ export default function HomePage() {
       </nav>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8 py-20 text-center">
-        <div className="animate-fade-up rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-white/60">
+        <div className="animate-fade-up rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1.5 text-xs font-medium text-brand-400">
           Built for independent artists
         </div>
 

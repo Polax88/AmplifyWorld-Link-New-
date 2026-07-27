@@ -9,7 +9,7 @@ export interface SparklineProps {
 }
 
 /** Minimal hand-rolled SVG trend line — no charting dependency for a single 30-point series. */
-export function Sparkline({ values, width = 240, height = 56, className, strokeColor = '#a78bfa' }: SparklineProps) {
+export function Sparkline({ values, width = 240, height = 56, className, strokeColor = '#ff4081' }: SparklineProps) {
   if (values.length === 0) {
     return (
       <div
