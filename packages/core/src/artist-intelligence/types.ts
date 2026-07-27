@@ -6,6 +6,7 @@ export type ArtistPlatform =
   | 'facebook'
   | 'soundcloud'
   | 'deezer'
+  | 'apple_music'
   | 'beatport'
   | 'shazam';
 
