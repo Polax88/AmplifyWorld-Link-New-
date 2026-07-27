@@ -1,13 +1,18 @@
 import NextAuth from 'next-auth';
+import Spotify from 'next-auth/providers/spotify';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma, type UserRole } from '@amplifyworld/database';
+import { env } from '../env';
 
 /**
- * Auth.js configuration. `providers` starts empty on purpose — this app
- * ships without a hard dependency on any single identity provider. To add
- * one (Google, Spotify, Discord — relevant for musicians), install its
- * package and push it into the array below plus the matching env vars in
- * `.env.example` / `src/env.ts`. Nothing else in the app needs to change.
+ * Auth.js configuration. Spotify doubles as both sign-in and the artist's
+ * "connect your socials" moment — reuses the same SPOTIFY_CLIENT_ID/
+ * SPOTIFY_CLIENT_SECRET already used by the onboarding wizard's profile
+ * importer (server/services/profile-import/spotify.ts), just a different
+ * OAuth flow (user login vs. app-level client-credentials search). Only
+ * added to `providers` when both vars are set, so the app still boots
+ * (with zero sign-in options, same as before) until credentials exist —
+ * to add another provider (Google, Discord), follow the same pattern.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -16,7 +21,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // own Host header isn't the public one) — trust it and rely on the
   // proxy/network layer to keep external requests from spoofing that header.
   trustHost: true,
-  providers: [],
+  providers:
+    env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET
+      ? [Spotify({ clientId: env.SPOTIFY_CLIENT_ID, clientSecret: env.SPOTIFY_CLIENT_SECRET })]
+      : [],
   pages: {
     signIn: '/login',
   },
