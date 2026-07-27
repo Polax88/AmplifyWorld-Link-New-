@@ -4,6 +4,7 @@ import { createContext, useContext, type ReactNode } from 'react';
 
 interface DashboardContextValue {
   aiWizardEnabled: boolean;
+  viberateEnabled: boolean;
 }
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
@@ -17,9 +18,12 @@ const DashboardContext = createContext<DashboardContextValue | null>(null);
  */
 export function DashboardProvider({
   aiWizardEnabled,
+  viberateEnabled,
   children,
 }: DashboardContextValue & { children: ReactNode }) {
-  return <DashboardContext.Provider value={{ aiWizardEnabled }}>{children}</DashboardContext.Provider>;
+  return (
+    <DashboardContext.Provider value={{ aiWizardEnabled, viberateEnabled }}>{children}</DashboardContext.Provider>
+  );
 }
 
 export function useDashboardContext(): DashboardContextValue {

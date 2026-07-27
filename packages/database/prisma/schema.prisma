@@ -118,11 +118,19 @@ model Page {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  owner            User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  // Set once an artist connects a Viberate match (onboarding wizard or the
+  // "Connect Viberate" editor action) — null means not connected, and every
+  // Viberate-dependent code path treats that as "nothing to do here" rather
+  // than an error. See @amplifyworld/core's ArtistIntelligenceProvider.
+  viberateArtistId    String?
+  viberateConnectedAt DateTime?
+
+  owner            User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   blocks           Block[]
   subscriptions    FanSubscription[]
   analyticsEvents  AnalyticsEvent[]
   momentumScores   PageMomentumScore[]
+  viberateSnapshots ViberateSnapshot[]
 
   @@index([ownerId])
   @@map("pages")
@@ -230,6 +238,24 @@ model PageMomentumScore {
   @@unique([pageId, date])
   @@index([date, scoreChange])
   @@map("page_momentum_scores")
+}
+
+// ---------------------------------------------------------------------------
+// Viberate cross-platform artist data (one daily snapshot per connected page)
+// ---------------------------------------------------------------------------
+
+model ViberateSnapshot {
+  id        String   @id @default(cuid())
+  pageId    String
+  date      DateTime @db.Date // one row per page per calendar day (UTC), mirrors PageMomentumScore
+  rankScore Float? // Viberate's own aggregate artist rank/score that day
+  profile   Json     @default("{}") // the full ArtistIntelligenceSnapshot payload (genres, social links, per-platform metrics)
+  fetchedAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, date])
+  @@map("viberate_snapshots")
 }
 
 // ---------------------------------------------------------------------------

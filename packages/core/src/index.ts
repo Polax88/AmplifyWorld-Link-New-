@@ -20,3 +20,5 @@ export * from './templates/definitions';
 
 export * from './momentum/types';
 export * from './momentum/score';
+
+export * from './artist-intelligence/types';

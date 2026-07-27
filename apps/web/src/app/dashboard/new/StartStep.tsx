@@ -77,6 +77,8 @@ export function StartStep({
           config: block.config,
           keep: true,
         })),
+        viberateMatch: draft.viberateMatch,
+        viberateConnect: draft.viberateMatch !== null,
       });
     } catch {
       setError("Something went wrong drafting your page — you can try again, or start with a blank page instead.");

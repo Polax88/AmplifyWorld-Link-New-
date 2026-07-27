@@ -7,6 +7,8 @@ import type { Context } from '../context';
 import { aiAssistant } from '../../services/ai-assistant';
 import { profileImportSource } from '../../services/profile-import';
 import { analytics } from '../../services/analytics';
+import { artistIntelligence } from '../../services/artist-intelligence';
+import { syncViberateSnapshot } from '../../services/artist-intelligence/sync';
 
 /**
  * The onboarding wizard's server side: `start` creates a real Page
@@ -100,9 +102,17 @@ export const onboardingRouter = router({
         socialHandles: input.socialHandles,
       });
 
+      // Best-effort only — a Viberate hiccup (or, today, simply no API key
+      // configured yet) must never block the wizard. No match found is the
+      // normal case until the team has a real Viberate subscription.
+      const viberateMatch = await artistIntelligence
+        .search(input.stageName)
+        .then((matches) => matches[0] ?? null)
+        .catch(() => null);
+
       await analytics.track({ type: 'CUSTOM', pageId: input.pageId, metadata: { step: 'wizard_drafted' } });
 
-      return { bio: result.bio, avatarUrl: profile?.imageUrl, suggestedBlocks: result.suggestedBlocks };
+      return { bio: result.bio, avatarUrl: profile?.imageUrl, suggestedBlocks: result.suggestedBlocks, viberateMatch };
     }),
 
   commit: protectedProcedure
@@ -112,6 +122,10 @@ export const onboardingRouter = router({
         bio: z.string().max(500).optional(),
         avatarUrl: z.string().url().optional(),
         blocks: z.array(suggestedBlockSchema).max(20),
+        // The artist's keep/skip decision on the wizard's auto-found
+        // Viberate match (see `draft`'s `viberateMatch`) — undefined if no
+        // match was found or the artist chose to skip it.
+        viberateExternalId: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -138,6 +152,20 @@ export const onboardingRouter = router({
           }),
         ),
       ]);
+
+      // Best-effort, outside the transaction (an external API call has no
+      // business holding a DB transaction open) — a failure here must not
+      // fail the commit the artist is waiting on; the page is already saved.
+      if (input.viberateExternalId) {
+        await syncViberateSnapshot(input.pageId, input.viberateExternalId)
+          .then(() =>
+            ctx.prisma.page.update({
+              where: { id: input.pageId },
+              data: { viberateArtistId: input.viberateExternalId, viberateConnectedAt: new Date() },
+            }),
+          )
+          .catch(() => null);
+      }
 
       await analytics.track({ type: 'CUSTOM', pageId: input.pageId, metadata: { step: 'wizard_committed' } });
 

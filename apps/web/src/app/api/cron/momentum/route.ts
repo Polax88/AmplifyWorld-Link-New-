@@ -3,9 +3,11 @@ import { prisma, type Prisma } from '@amplifyworld/database';
 import {
   calculateMomentumScore,
   type DailyPageMetrics,
+  type ExternalMomentumSignal,
   type StoredMomentumBreakdown,
 } from '@amplifyworld/core';
 import { env } from '../../../../env';
+import { syncViberateSnapshot } from '../../../../server/services/artist-intelligence/sync';
 
 const HISTORY_DAYS = 30;
 
@@ -27,19 +29,31 @@ export async function GET(request: Request) {
   const dateKey = previousUtcDateKey(new Date());
   const { start, end } = utcDayBounds(dateKey);
 
-  const pageIdRows = await prisma.analyticsEvent.groupBy({
-    by: ['pageId'],
-    where: { occurredAt: { gte: start, lt: end } },
-  });
+  const [pageIdRows, viberatePages] = await Promise.all([
+    prisma.analyticsEvent.groupBy({ by: ['pageId'], where: { occurredAt: { gte: start, lt: end } } }),
+    // A page with a Viberate connection but no Link traffic yesterday still
+    // needs a score — otherwise a low-traffic-but-trending-elsewhere artist
+    // would never appear at all.
+    prisma.page.findMany({ where: { viberateArtistId: { not: null } }, select: { id: true, viberateArtistId: true } }),
+  ]);
 
-  for (const { pageId } of pageIdRows) {
-    await scorePage(pageId, dateKey, start, end);
+  const viberateArtistIdByPage = new Map(viberatePages.map((p) => [p.id, p.viberateArtistId as string]));
+  const allPageIds = new Set([...pageIdRows.map((row) => row.pageId), ...viberateArtistIdByPage.keys()]);
+
+  for (const pageId of allPageIds) {
+    await scorePage(pageId, dateKey, start, end, viberateArtistIdByPage.get(pageId));
   }
 
-  return NextResponse.json({ success: true, date: dateKey, pagesScored: pageIdRows.length });
+  return NextResponse.json({ success: true, date: dateKey, pagesScored: allPageIds.size });
 }
 
-async function scorePage(pageId: string, dateKey: string, start: Date, end: Date): Promise<void> {
+async function scorePage(
+  pageId: string,
+  dateKey: string,
+  start: Date,
+  end: Date,
+  viberateArtistId: string | undefined,
+): Promise<void> {
   const current = await aggregateDailyMetrics(pageId, dateKey, start, end);
 
   const priorScores = await prisma.pageMomentumScore.findMany({
@@ -53,7 +67,9 @@ async function scorePage(pageId: string, dateKey: string, start: Date, end: Date
     .reverse()
     .map((row) => (row.breakdown as unknown as StoredMomentumBreakdown).metrics);
 
-  const result = calculateMomentumScore(current, history);
+  const external = await resolveExternalSignal(pageId, viberateArtistId, start);
+
+  const result = calculateMomentumScore(current, history, external);
   const previousScore = priorScores[0]?.score ?? 0;
   const scoreChange = result.score - previousScore;
 
@@ -74,6 +90,42 @@ async function scorePage(pageId: string, dateKey: string, start: Date, end: Date
       breakdown: breakdown as unknown as Prisma.InputJsonValue,
     },
   });
+}
+
+/**
+ * Fetches today's Viberate snapshot and builds the trailing rank/score
+ * history the momentum engine needs. Never throws — a Viberate hiccup (rate
+ * limit, an unmatched artist, or simply no API key configured yet) must
+ * never block this page's own Link-derived score from computing.
+ */
+async function resolveExternalSignal(
+  pageId: string,
+  viberateArtistId: string | undefined,
+  start: Date,
+): Promise<ExternalMomentumSignal | undefined> {
+  if (!viberateArtistId) return undefined;
+
+  try {
+    const snapshot = await syncViberateSnapshot(pageId, viberateArtistId);
+    if (snapshot.rankScore === undefined) return undefined;
+
+    const priorSnapshots = await prisma.viberateSnapshot.findMany({
+      where: { pageId, date: { lt: start } },
+      orderBy: { date: 'desc' },
+      take: HISTORY_DAYS,
+      select: { rankScore: true },
+    });
+
+    return {
+      current: snapshot.rankScore,
+      history: priorSnapshots
+        .slice()
+        .reverse()
+        .map((row) => row.rankScore ?? 0),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 async function aggregateDailyMetrics(

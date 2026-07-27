@@ -87,4 +87,32 @@ describe('calculateMomentumScore', () => {
     expect(result.score).toBeGreaterThanOrEqual(0);
     expect(result.score).toBeLessThanOrEqual(100);
   });
+
+  it('is byte-for-byte identical with and without an unused external param (backward compatible)', () => {
+    const history = Array.from({ length: 10 }, (_, i) => metrics({ date: `day-${i}` }));
+    const withoutParam = calculateMomentumScore(metrics(), history);
+    const withUndefined = calculateMomentumScore(metrics(), history, undefined);
+    expect(withUndefined).toEqual(withoutParam);
+    expect(withoutParam.breakdown.externalMomentum).toBeUndefined();
+  });
+
+  it('blends in externalMomentum only when a Viberate signal is provided', () => {
+    const history = Array.from({ length: 10 }, (_, i) => metrics({ date: `day-${i}` }));
+    const withExternal = calculateMomentumScore(metrics(), history, { current: 80, history: [50, 50, 50, 50, 50] });
+    expect(withExternal.breakdown.externalMomentum).toBeGreaterThan(50);
+  });
+
+  it('rewards accelerating external (Viberate) rank/score the same way it rewards accelerating traffic', () => {
+    const history = Array.from({ length: 10 }, (_, i) => metrics({ date: `day-${i}` }));
+    const accelerating = calculateMomentumScore(metrics(), history, { current: 90, history: [60, 60, 60, 60, 60] });
+    const flat = calculateMomentumScore(metrics(), history, { current: 60, history: [60, 60, 60, 60, 60] });
+    expect(accelerating.score).toBeGreaterThan(flat.score);
+    expect(accelerating.breakdown.externalMomentum!).toBeGreaterThan(flat.breakdown.externalMomentum!);
+  });
+
+  it('keeps the external blend within [0, 100] even under extreme external inputs', () => {
+    const result = calculateMomentumScore(metrics(), [], { current: 1_000_000, history: [1] });
+    expect(result.score).toBeGreaterThanOrEqual(0);
+    expect(result.score).toBeLessThanOrEqual(100);
+  });
 });

@@ -6,6 +6,12 @@ export interface DraftBlock {
   keep: boolean;
 }
 
+export interface ViberateMatch {
+  externalId: string;
+  name: string;
+  imageUrl?: string;
+}
+
 export interface WizardState {
   pageId: string;
   handle: string;
@@ -17,6 +23,10 @@ export interface WizardState {
   bio: string;
   avatarUrl: string | null;
   blocks: DraftBlock[];
+  /** Auto-found by the server during `draft` — null if no confident match exists. */
+  viberateMatch: ViberateMatch | null;
+  /** The artist's keep/skip decision on `viberateMatch` — defaults to keep when a match exists. */
+  viberateConnect: boolean;
 }
 
 export const SOCIAL_PLATFORMS = ['instagram', 'tiktok', 'youtube', 'x'] as const;

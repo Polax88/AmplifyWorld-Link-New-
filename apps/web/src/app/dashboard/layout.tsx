@@ -12,6 +12,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const aiWizardEnabled = await featureFlags.isEnabled('ai-onboarding-wizard', session.user.id);
+  const viberateEnabled = await featureFlags.isEnabled('viberate-integration', session.user.id);
 
   return (
     <div className="min-h-screen">
@@ -31,7 +32,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </header>
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <DashboardProvider aiWizardEnabled={aiWizardEnabled}>{children}</DashboardProvider>
+        <DashboardProvider aiWizardEnabled={aiWizardEnabled} viberateEnabled={viberateEnabled}>
+          {children}
+        </DashboardProvider>
       </div>
     </div>
   );
