@@ -8,4 +8,5 @@ export * from './components/Modal';
 export * from './components/IconButton';
 export * from './components/Skeleton';
 export * from './components/QrCode';
+export * from './components/Sparkline';
 export * from './lib/cn';

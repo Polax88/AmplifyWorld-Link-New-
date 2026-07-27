@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { domainEvents } from '@amplifyworld/core';
 import { router, publicProcedure, protectedProcedure } from '../trpc';
 import { analytics } from '../../services/analytics';
+import { getRequestSignals } from '../../services/request-signals';
 
 export const analyticsRouter = router({
   /** Simple view/click totals for a page's own dashboard — no charting yet, just the numbers. */
@@ -30,7 +31,8 @@ export const analyticsRouter = router({
     .input(z.object({ pageId: z.string(), blockId: z.string(), blockType: z.string() }))
     .mutation(async ({ input }) => {
       const occurredAt = new Date().toISOString();
-      await analytics.track({ type: 'BLOCK_CLICK', pageId: input.pageId, blockId: input.blockId });
+      const signals = await getRequestSignals();
+      await analytics.track({ type: 'BLOCK_CLICK', pageId: input.pageId, blockId: input.blockId, ...signals });
       await domainEvents.publish('block.clicked', input, occurredAt);
       return { success: true };
     }),

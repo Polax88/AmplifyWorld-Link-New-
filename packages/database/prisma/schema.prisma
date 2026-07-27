@@ -122,6 +122,7 @@ model Page {
   blocks           Block[]
   subscriptions    FanSubscription[]
   analyticsEvents  AnalyticsEvent[]
+  momentumScores   PageMomentumScore[]
 
   @@index([ownerId])
   @@map("pages")
@@ -193,12 +194,42 @@ model AnalyticsEvent {
   metadata   Json               @default("{}")
   occurredAt DateTime           @default(now())
 
+  // Request-derived signals, captured for PAGE_VIEW/BLOCK_CLICK on the public
+  // page only (never raw IP — see apps/web request-signals service). Feed the
+  // momentum scoring engine in @amplifyworld/core; nullable because older
+  // rows and non-public event types don't carry them.
+  country    String? // ISO country code, from edge geolocation headers
+  deviceType String? // "mobile" | "desktop" | "tablet" | "other"
+  source     String? // "direct" | "social" | "search" | "referral" | ...
+  visitorId  String? // anonymous first-party cookie id, for unique/return-visitor detection
+
   page  Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
   block Block? @relation(fields: [blockId], references: [id], onDelete: SetNull)
   fan   Fan?   @relation(fields: [fanId], references: [id], onDelete: SetNull)
 
   @@index([pageId, occurredAt])
+  @@index([pageId, visitorId])
   @@map("analytics_events")
+}
+
+// ---------------------------------------------------------------------------
+// Artist Momentum Index (daily momentum score time series per page)
+// ---------------------------------------------------------------------------
+
+model PageMomentumScore {
+  id          String   @id @default(cuid())
+  pageId      String
+  date        DateTime @db.Date // one row per page per calendar day (UTC)
+  score       Float // 0-100, see @amplifyworld/core momentum scoring engine
+  scoreChange Float    @default(0) // score - previous day's score; leaderboards sort on this
+  breakdown   Json     @default("{}") // per-factor sub-scores, for the "why" behind a score
+  createdAt   DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, date])
+  @@index([date, scoreChange])
+  @@map("page_momentum_scores")
 }
 
 // ---------------------------------------------------------------------------

@@ -18,6 +18,7 @@ import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
 import { BlockConfigForm } from '../../../components/blocks/BlockConfigForm';
 import { PagePreview } from '../../../components/PagePreview';
 import { ShareQrButton } from '../../../components/ShareQrButton';
+import { MomentumPanel } from '../../../components/MomentumPanel';
 import { SortableBlockCard } from './SortableBlockCard';
 
 export default function PageEditor({ params }: { params: Promise<{ pageId: string }> }) {
@@ -112,6 +113,8 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
             </span>
           </div>
         ) : null}
+
+        <MomentumPanel pageId={pageId} />
 
         <section>
           <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-white/50">Add a block</h2>

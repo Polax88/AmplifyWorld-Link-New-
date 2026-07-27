@@ -3,6 +3,7 @@ import { prisma } from '@amplifyworld/database';
 import { Avatar } from '@amplifyworld/ui';
 import '../../server/bootstrap';
 import { analytics } from '../../server/services/analytics';
+import { getRequestSignals } from '../../server/services/request-signals';
 import { BlockRenderer } from '../../components/blocks/BlockRenderer';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,8 @@ export default async function ArtistPage({ params }: { params: Promise<{ handle:
     notFound();
   }
 
-  await analytics.track({ type: 'PAGE_VIEW', pageId: page.id });
+  const signals = await getRequestSignals();
+  await analytics.track({ type: 'PAGE_VIEW', pageId: page.id, ...signals });
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center gap-8 px-6 py-16 sm:py-20">

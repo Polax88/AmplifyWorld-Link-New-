@@ -20,7 +20,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Link href="/dashboard" className="text-sm font-semibold tracking-tight">
             AmplifyWorld Link
           </Link>
-          <Avatar name={session.user.name ?? session.user.email ?? 'You'} size="sm" />
+          <div className="flex items-center gap-4">
+            {session.user.role === 'ADMIN' ? (
+              <Link href="/dashboard/admin/momentum" className="text-sm text-white/60 hover:text-white">
+                Rising Artists
+              </Link>
+            ) : null}
+            <Avatar name={session.user.name ?? session.user.email ?? 'You'} size="sm" />
+          </div>
         </div>
       </header>
       <div className="mx-auto max-w-3xl px-6 py-10">

@@ -4,6 +4,11 @@ export interface AnalyticsEventInput {
   blockId?: string;
   fanId?: string;
   metadata?: Record<string, unknown>;
+  /** Request-derived signals (see analytics/request-signals.ts) that feed the momentum scoring engine. */
+  country?: string;
+  deviceType?: string;
+  source?: string;
+  visitorId?: string;
 }
 
 /**

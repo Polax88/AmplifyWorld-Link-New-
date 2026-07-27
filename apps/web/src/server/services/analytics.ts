@@ -10,6 +10,10 @@ const databaseTracker: AnalyticsTracker = {
         blockId: event.blockId,
         fanId: event.fanId,
         metadata: (event.metadata ?? {}) as Prisma.InputJsonValue,
+        country: event.country,
+        deviceType: event.deviceType,
+        source: event.source,
+        visitorId: event.visitorId,
       },
     });
   },

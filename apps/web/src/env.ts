@@ -23,6 +23,11 @@ const envSchema = z.object({
   // "search Spotify" affordance just returns no results (see profile-import).
   SPOTIFY_CLIENT_ID: z.string().min(1).optional(),
   SPOTIFY_CLIENT_SECRET: z.string().min(1).optional(),
+
+  // Authenticates Vercel Cron's daily call to /api/cron/momentum (the
+  // Artist Momentum Index ETL). Required only in environments that run the
+  // cron — see .env.example.
+  CRON_SECRET: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

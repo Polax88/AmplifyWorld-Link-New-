@@ -4,6 +4,7 @@ import { blockRouter } from './block';
 import { analyticsRouter } from './analytics';
 import { featureFlagRouter } from './feature-flag';
 import { onboardingRouter } from './onboarding';
+import { momentumRouter } from './momentum';
 
 /**
  * Root router. Add a new domain (e.g. `fan`, `integration`) by creating
@@ -17,6 +18,7 @@ export const appRouter = router({
   analytics: analyticsRouter,
   featureFlag: featureFlagRouter,
   onboarding: onboardingRouter,
+  momentum: momentumRouter,
 });
 
 export type AppRouter = typeof appRouter;
