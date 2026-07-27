@@ -4,6 +4,7 @@ import { Avatar } from '@amplifyworld/ui';
 import { auth } from '../../server/auth';
 import { featureFlags } from '../../server/services/feature-flags';
 import { DashboardProvider } from '../../components/DashboardContext';
+import { NotificationBell } from '../../components/NotificationBell';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -23,10 +24,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </Link>
           <div className="flex items-center gap-4">
             {session.user.role === 'ADMIN' ? (
-              <Link href="/dashboard/admin/momentum" className="text-sm text-white/60 hover:text-white">
-                Rising Artists
-              </Link>
+              <>
+                <Link href="/dashboard/admin/momentum" className="text-sm text-white/60 hover:text-white">
+                  Rising Artists
+                </Link>
+                <Link href="/dashboard/admin/api-keys" className="text-sm text-white/60 hover:text-white">
+                  API Keys
+                </Link>
+              </>
             ) : null}
+            <NotificationBell />
             <Avatar name={session.user.name ?? session.user.email ?? 'You'} size="sm" />
           </div>
         </div>

@@ -10,6 +10,7 @@ import { env } from '../../../../env';
 import { syncViberateSnapshot } from '../../../../server/services/artist-intelligence/sync';
 
 const HISTORY_DAYS = 30;
+const LEADERBOARD_SIZE = 100;
 
 /**
  * The Artist Momentum Index daily ETL. Triggered once a day by Vercel Cron
@@ -44,7 +45,45 @@ export async function GET(request: Request) {
     await scorePage(pageId, dateKey, start, end, viberateArtistIdByPage.get(pageId));
   }
 
-  return NextResponse.json({ success: true, date: dateKey, pagesScored: allPageIds.size });
+  const alertsCreated = await recordNewEntrantAlerts(start);
+
+  return NextResponse.json({ success: true, date: dateKey, pagesScored: allPageIds.size, alertsCreated });
+}
+
+/**
+ * Persists a `MomentumAlert` for every page that newly entered today's Top
+ * 100 (by scoreChange) — the same "new entrant" comparison the leaderboard
+ * already computes on the fly, just captured once here so artists get an
+ * in-app notification instead of only admins seeing it on the leaderboard.
+ */
+async function recordNewEntrantAlerts(today: Date): Promise<number> {
+  const [todayTop, yesterdayTop] = await Promise.all([
+    prisma.pageMomentumScore.findMany({
+      where: { date: today },
+      orderBy: { scoreChange: 'desc' },
+      take: LEADERBOARD_SIZE,
+      select: { pageId: true },
+    }),
+    prisma.pageMomentumScore.findMany({
+      where: { date: new Date(today.getTime() - 24 * 60 * 60 * 1000) },
+      orderBy: { scoreChange: 'desc' },
+      take: LEADERBOARD_SIZE,
+      select: { pageId: true },
+    }),
+  ]);
+
+  const yesterdayTopIds = new Set(yesterdayTop.map((row) => row.pageId));
+  const newEntrants = todayTop.filter((row) => !yesterdayTopIds.has(row.pageId));
+
+  for (const { pageId } of newEntrants) {
+    await prisma.momentumAlert.upsert({
+      where: { pageId_date: { pageId, date: today } },
+      create: { pageId, date: today, message: 'Entered the Top 100 Rising Artists' },
+      update: {},
+    });
+  }
+
+  return newEntrants.length;
 }
 
 async function scorePage(

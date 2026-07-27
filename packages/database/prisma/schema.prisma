@@ -131,6 +131,7 @@ model Page {
   analyticsEvents  AnalyticsEvent[]
   momentumScores   PageMomentumScore[]
   viberateSnapshots ViberateSnapshot[]
+  momentumAlerts   MomentumAlert[]
 
   @@index([ownerId])
   @@map("pages")
@@ -256,6 +257,39 @@ model ViberateSnapshot {
 
   @@unique([pageId, date])
   @@map("viberate_snapshots")
+}
+
+// ---------------------------------------------------------------------------
+// Momentum alerts (in-app notifications — e.g. "entered the Top 100 today")
+// ---------------------------------------------------------------------------
+
+model MomentumAlert {
+  id        String    @id @default(cuid())
+  pageId    String
+  date      DateTime  @db.Date // the day this alert fired, one per page per day
+  message   String
+  seenAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, date])
+  @@map("momentum_alerts")
+}
+
+// ---------------------------------------------------------------------------
+// External API keys (read-only Artist Momentum Index API — admin-issued)
+// ---------------------------------------------------------------------------
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  label      String // e.g. "Sony Music — Q3 partnership"; who this key was issued to
+  hashedKey  String    @unique // SHA-256 of the actual key — the plaintext is shown once at creation and never stored
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("api_keys")
 }
 
 // ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import { featureFlagRouter } from './feature-flag';
 import { onboardingRouter } from './onboarding';
 import { momentumRouter } from './momentum';
 import { viberateRouter } from './viberate';
+import { apiKeyRouter } from './api-key';
 
 /**
  * Root router. Add a new domain (e.g. `fan`, `integration`) by creating
@@ -21,6 +22,7 @@ export const appRouter = router({
   onboarding: onboardingRouter,
   momentum: momentumRouter,
   viberate: viberateRouter,
+  apiKey: apiKeyRouter,
 });
 
 export type AppRouter = typeof appRouter;
