@@ -22,7 +22,12 @@ export const momentumRouter = router({
     const history = rows
       .slice()
       .reverse()
-      .map((row) => ({ date: row.date, score: row.score, scoreChange: row.scoreChange }));
+      .map((row) => ({
+        date: row.date,
+        score: row.score,
+        scoreChange: row.scoreChange,
+        breakdown: (row.breakdown as unknown as StoredMomentumBreakdown).subScores,
+      }));
 
     return { current: history.at(-1) ?? null, history };
   }),

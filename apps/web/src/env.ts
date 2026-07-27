@@ -28,6 +28,12 @@ const envSchema = z.object({
   // Artist Momentum Index ETL). Required only in environments that run the
   // cron — see .env.example.
   CRON_SECRET: z.string().min(1).optional(),
+
+  // Viberate Music Data API. Optional and currently unused — the real HTTP
+  // client isn't implemented yet (no API product subscription exists), so
+  // server/services/artist-intelligence always resolves to a no-op today
+  // regardless of this value. Defined now so it's ready to wire up.
+  VIBERATE_API_KEY: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

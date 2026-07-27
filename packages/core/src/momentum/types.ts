@@ -16,6 +16,20 @@ export interface MomentumBreakdown {
   platformDiversity: number;
   clickDepth: number;
   retention: number;
+  /**
+   * Present only for a page with a connected Viberate match (see
+   * `ArtistIntelligenceProvider` and `ViberateSnapshot`) — a page's
+   * cross-platform rank/follower acceleration outside Link itself. Absent
+   * entirely (not just zero) when there's no Viberate connection, since it's
+   * an additive bonus factor, not a required one.
+   */
+  externalMomentum?: number;
+}
+
+/** External (Viberate) rank/score trend for a page, if connected — feeds the optional `externalMomentum` factor. */
+export interface ExternalMomentumSignal {
+  current: number;
+  history: number[];
 }
 
 export interface MomentumResult {

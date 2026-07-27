@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, EyeOff, Smartphone } from 'lucide-react';
-import { Button, Card, Textarea, Modal } from '@amplifyworld/ui';
+import { Eye, EyeOff, Smartphone, Activity, X } from 'lucide-react';
+import { Button, Card, Textarea, Modal, Avatar } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
 import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
 import { PagePreview } from '../../../components/PagePreview';
@@ -42,6 +42,8 @@ export function ReviewStep({
               config: block.config,
               keep: true,
             })),
+            viberateMatch: draft.viberateMatch,
+            viberateConnect: draft.viberateMatch !== null,
           }));
         },
       },
@@ -62,6 +64,8 @@ export function ReviewStep({
         bio: state.bio,
         avatarUrl: state.avatarUrl ?? undefined,
         blocks: state.blocks.filter((b) => b.keep).map((b) => ({ type: b.type, config: b.config })),
+        viberateExternalId:
+          state.viberateMatch && state.viberateConnect ? state.viberateMatch.externalId : undefined,
       },
       { onSuccess: onCommitted },
     );
@@ -100,6 +104,31 @@ export function ReviewStep({
           value={state.bio}
           onChange={(event) => onUpdate((prev) => ({ ...prev, bio: event.target.value }))}
         />
+
+        {state.viberateMatch ? (
+          <Card className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Avatar src={state.viberateMatch.imageUrl} name={state.viberateMatch.name} size="sm" />
+              <div>
+                <span className="flex items-center gap-1.5 text-sm font-medium text-white">
+                  <Activity className="size-3.5 text-brand-400" />
+                  Found on Viberate: {state.viberateMatch.name}
+                </span>
+                <p className="text-xs text-white/50">
+                  Connect for cross-platform momentum data alongside your Link stats.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onUpdate((prev) => ({ ...prev, viberateConnect: !prev.viberateConnect }))}
+              className="text-white/50 hover:text-white"
+              aria-label={state.viberateConnect ? 'Skip Viberate connection' : 'Connect Viberate'}
+            >
+              {state.viberateConnect ? <Eye className="size-4" /> : <X className="size-4" />}
+            </button>
+          </Card>
+        ) : null}
 
         <div className="flex flex-col gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-white/50">Suggested blocks</span>

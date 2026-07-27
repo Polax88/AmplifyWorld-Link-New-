@@ -1,7 +1,9 @@
-import type { DailyPageMetrics, MomentumBreakdown, MomentumResult } from './types';
+import type { DailyPageMetrics, ExternalMomentumSignal, MomentumBreakdown, MomentumResult } from './types';
 
-/** Weighted formula: how much each factor contributes to the final 0-100 score. */
-export const MOMENTUM_WEIGHTS: Record<keyof MomentumBreakdown, number> = {
+type CoreMomentumBreakdown = Omit<MomentumBreakdown, 'externalMomentum'>;
+
+/** Weighted formula for Link's own 6 factors — unchanged by the optional Viberate blend below. */
+export const MOMENTUM_WEIGHTS: Record<keyof CoreMomentumBreakdown, number> = {
   trafficAcceleration: 0.3,
   uniqueFanGrowth: 0.2,
   geographicExpansion: 0.15,
@@ -9,6 +11,15 @@ export const MOMENTUM_WEIGHTS: Record<keyof MomentumBreakdown, number> = {
   clickDepth: 0.1,
   retention: 0.1,
 };
+
+/**
+ * Weight given to `externalMomentum` (Viberate) when present. The 6 core
+ * weights above are *not* rescaled to compensate — a page without a
+ * Viberate connection gets `score = coreWeightedSum` exactly as before this
+ * factor existed; a page with one gets a blended score. This keeps the
+ * existing formula byte-for-byte stable for the vast majority of pages.
+ */
+export const EXTERNAL_MOMENTUM_WEIGHT = 0.15;
 
 const KNOWN_SOURCES = ['direct', 'social', 'search', 'referral'] as const;
 const MAX_SOURCE_ENTROPY = Math.log(KNOWN_SOURCES.length);
@@ -56,8 +67,17 @@ function platformDiversityScore(sources: Record<string, number>): number {
  * current day's metrics plus trailing history for context. Pure and
  * side-effect-free — the ETL cron (apps/web) is responsible for gathering
  * `current`/`history` from Postgres and persisting the result.
+ *
+ * `external` is optional Viberate rank/score trend data, present only for
+ * pages with a connected match. When absent, the score is exactly today's
+ * 6-factor formula with no change — the blend below only ever applies on
+ * top of it, never in place of it.
  */
-export function calculateMomentumScore(current: DailyPageMetrics, history: DailyPageMetrics[]): MomentumResult {
+export function calculateMomentumScore(
+  current: DailyPageMetrics,
+  history: DailyPageMetrics[],
+  external?: ExternalMomentumSignal,
+): MomentumResult {
   const trailing7 = history.slice(-7);
   const trailing30 = history.slice(-30);
 
@@ -79,7 +99,7 @@ export function calculateMomentumScore(current: DailyPageMetrics, history: Daily
   const retention =
     current.uniqueVisitors === 0 ? 0 : clamp((current.returningVisitors / current.uniqueVisitors) * 150, 0, 100);
 
-  const breakdown: MomentumBreakdown = {
+  const coreBreakdown: CoreMomentumBreakdown = {
     trafficAcceleration,
     uniqueFanGrowth,
     geographicExpansion,
@@ -88,14 +108,26 @@ export function calculateMomentumScore(current: DailyPageMetrics, history: Daily
     retention,
   };
 
-  const score = clamp(
-    Object.entries(breakdown).reduce(
-      (sum, [key, value]) => sum + value * MOMENTUM_WEIGHTS[key as keyof MomentumBreakdown],
-      0,
-    ),
+  const coreWeightedSum = Object.entries(coreBreakdown).reduce(
+    (sum, [key, value]) => sum + value * MOMENTUM_WEIGHTS[key as keyof CoreMomentumBreakdown],
     0,
-    100,
   );
+
+  let score: number;
+  let externalMomentum: number | undefined;
+  if (external) {
+    externalMomentum = accelerationScore(external.current, average(external.history.slice(-7)));
+    score = clamp(
+      coreWeightedSum * (1 - EXTERNAL_MOMENTUM_WEIGHT) + externalMomentum * EXTERNAL_MOMENTUM_WEIGHT,
+      0,
+      100,
+    );
+  } else {
+    score = clamp(coreWeightedSum, 0, 100);
+  }
+
+  const breakdown: MomentumBreakdown =
+    externalMomentum !== undefined ? { ...coreBreakdown, externalMomentum } : coreBreakdown;
 
   return { score: Math.round(score), breakdown };
 }

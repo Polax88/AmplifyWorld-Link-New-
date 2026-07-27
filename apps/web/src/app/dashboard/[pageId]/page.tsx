@@ -19,11 +19,14 @@ import { BlockConfigForm } from '../../../components/blocks/BlockConfigForm';
 import { PagePreview } from '../../../components/PagePreview';
 import { ShareQrButton } from '../../../components/ShareQrButton';
 import { MomentumPanel } from '../../../components/MomentumPanel';
+import { ConnectViberateButton } from '../../../components/ConnectViberateButton';
+import { useDashboardContext } from '../../../components/DashboardContext';
 import { SortableBlockCard } from './SortableBlockCard';
 
 export default function PageEditor({ params }: { params: Promise<{ pageId: string }> }) {
   const { pageId } = use(params);
   const utils = trpc.useUtils();
+  const { viberateEnabled } = useDashboardContext();
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -115,6 +118,8 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
         ) : null}
 
         <MomentumPanel pageId={pageId} />
+
+        {viberateEnabled && !page.viberateArtistId ? <ConnectViberateButton pageId={pageId} /> : null}
 
         <section>
           <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-white/50">Add a block</h2>

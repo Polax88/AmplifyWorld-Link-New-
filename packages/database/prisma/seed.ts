@@ -59,6 +59,20 @@ async function main() {
     update: {},
   });
 
+  await prisma.featureFlag.upsert({
+    where: { key: 'viberate-integration' },
+    create: {
+      key: 'viberate-integration',
+      description:
+        'Show Viberate-connected UI (onboarding match card, "Connect Viberate" editor action). Disabled by ' +
+        'default — stays dark until there is a real Viberate Music Data API subscription, independent of ' +
+        'whether VIBERATE_API_KEY is set.',
+      isEnabled: false,
+      rolloutPercentage: 0,
+    },
+    update: {},
+  });
+
   console.log(`Seeded demo page: /${page.handle}`);
 }
 
