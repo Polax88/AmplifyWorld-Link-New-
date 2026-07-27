@@ -19,4 +19,13 @@ export interface WizardState {
   blocks: DraftBlock[];
 }
 
-export const SOCIAL_PLATFORMS = ['instagram', 'tiktok', 'youtube', 'x'] as const;
+export const SOCIAL_PLATFORMS = [
+  'instagram',
+  'tiktok',
+  'youtube',
+  'x',
+  'apple_music',
+  'soundcloud',
+  'deezer',
+  'facebook',
+] as const;

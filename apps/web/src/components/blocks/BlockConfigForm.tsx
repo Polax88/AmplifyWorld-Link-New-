@@ -9,6 +9,7 @@ import type {
   TipJarBlockConfig,
   GatedContentBlockConfig,
 } from '@amplifyworld/core';
+import { platformLabel } from './SocialBlockView';
 
 interface FormProps<TConfig> {
   config: TConfig;
@@ -91,9 +92,23 @@ function SocialForm({ config, onSave, saving }: FormProps<SocialBlockConfig>) {
         value={platform}
         onChange={(e) => setPlatform(e.target.value as SocialBlockConfig['platform'])}
       >
-        {(['instagram', 'tiktok', 'youtube', 'spotify', 'x', 'discord', 'other'] as const).map((p) => (
+        {(
+          [
+            'instagram',
+            'tiktok',
+            'youtube',
+            'spotify',
+            'apple_music',
+            'soundcloud',
+            'deezer',
+            'facebook',
+            'x',
+            'discord',
+            'other',
+          ] as const
+        ).map((p) => (
           <option key={p} value={p} className="bg-surface-raised">
-            {p}
+            {platformLabel[p]}
           </option>
         ))}
       </Select>

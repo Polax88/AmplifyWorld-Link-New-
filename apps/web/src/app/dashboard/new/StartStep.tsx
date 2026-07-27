@@ -5,6 +5,7 @@ import { Search, X, Sparkles } from 'lucide-react';
 import type { ArtistSearchResult } from '@amplifyworld/core';
 import { Button, Input, Card } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
+import { platformLabel } from '../../../components/blocks/SocialBlockView';
 import { SOCIAL_PLATFORMS, type WizardState } from './types';
 
 export function StartStep({
@@ -175,7 +176,7 @@ export function StartStep({
             {SOCIAL_PLATFORMS.map((platform) => (
               <Input
                 key={platform}
-                label={platform}
+                label={platformLabel[platform]}
                 placeholder="handle"
                 value={socialHandles[platform] ?? ''}
                 onChange={(e) => setSocialHandles((prev) => ({ ...prev, [platform]: e.target.value }))}
