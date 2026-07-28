@@ -13,15 +13,18 @@
 //   and independently deployable.
 
 generator client {
-  provider      = "prisma-client-js"
-  output        = "../generated/client"
-  // "native" covers local dev / CI on whatever OS runs `prisma generate`.
-  // "rhel-openssl-3.0.x" is Vercel's Node.js serverless (AWS Lambda) runtime
-  // — without it explicitly listed, a Vercel build only bundles whatever
-  // "native" resolved to on the build machine, which isn't necessarily the
-  // same OS/OpenSSL as the runtime that actually executes the function,
-  // and every Prisma call in production fails with
-  // PrismaClientInitializationError: Query Engine not found.
+  provider = "prisma-client-js"
+  // No custom `output` — this generates into the default, node_modules-
+  // integrated location (@prisma/client). A custom output path outside the
+  // app's own directory (this is a pnpm monorepo; the schema lives in
+  // packages/database) is the single most commonly-documented cause of
+  // "Query Engine not found" on Vercel: Next.js's file tracer has native,
+  // well-tested support for the default location, but only heuristic
+  // support for arbitrary custom output paths, which has proven unreliable
+  // here even with binaryTargets set correctly and explicit tracing hints.
+  //
+  // "native" covers local dev/CI on whatever OS runs `prisma generate`.
+  // "rhel-openssl-3.0.x" is Vercel's Node.js serverless (AWS Lambda) runtime.
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 

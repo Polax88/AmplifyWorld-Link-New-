@@ -10,18 +10,22 @@ const monorepoRoot = path.join(__dirname, '../..');
 const nextConfig: NextConfig = {
   transpilePackages: ['@amplifyworld/core', '@amplifyworld/database', '@amplifyworld/ui'],
   typedRoutes: true,
-  // Prisma's query engine binary is loaded via a dynamically-computed path
-  // at runtime, not a static import — Vercel's file tracer (@vercel/nft)
-  // only follows static require/import calls, so in this pnpm-workspace
-  // monorepo (Prisma's generated client lives in packages/database, outside
-  // this app's own directory) it silently drops the engine binary from the
-  // deployed function unless explicitly told to include it. Without this,
-  // every Prisma call in production throws
-  // PrismaClientInitializationError: Query Engine not found.
+  // Pins Next.js's file tracer to the actual pnpm workspace root (this is a
+  // monorepo — without this, tracing can misjudge the project boundary and
+  // over/under-include files across package directories).
   outputFileTracingRoot: monorepoRoot,
-  outputFileTracingIncludes: {
-    '/**/*': ['../../packages/database/generated/client/**/*'],
-  },
+  // @amplifyworld/database (which imports @prisma/client) is transpiled
+  // above — without this, webpack tries to bundle @prisma/client's
+  // generated code straight into the app bundle too. Prisma's client loads
+  // its native query engine via a `__dirname`-relative path computed at
+  // runtime; once that code is relocated into a webpack chunk, the
+  // computed path no longer points at the real .prisma/client directory,
+  // and neither the engine binary NOR any of .prisma/client shows up in
+  // the file tracer's output at all (confirmed empirically: zero
+  // `.prisma/client` references in .next's trace files without this).
+  // This keeps @prisma/client a real, unbundled `require()` resolved by
+  // Node at runtime, which Next.js's tracer has first-class support for.
+  serverExternalPackages: ['@prisma/client'],
 };
 
 export default nextConfig;
