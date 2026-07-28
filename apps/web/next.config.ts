@@ -15,16 +15,16 @@ const nextConfig: NextConfig = {
   // over/under-include files across package directories).
   outputFileTracingRoot: monorepoRoot,
   // @amplifyworld/database (which imports @prisma/client) is transpiled
-  // above — without this, webpack tries to bundle @prisma/client's
-  // generated code straight into the app bundle too. Prisma's client loads
-  // its native query engine via a `__dirname`-relative path computed at
-  // runtime; once that code is relocated into a webpack chunk, the
-  // computed path no longer points at the real .prisma/client directory,
-  // and neither the engine binary NOR any of .prisma/client shows up in
-  // the file tracer's output at all (confirmed empirically: zero
-  // `.prisma/client` references in .next's trace files without this).
-  // This keeps @prisma/client a real, unbundled `require()` resolved by
-  // Node at runtime, which Next.js's tracer has first-class support for.
+  // above — without this, webpack bundles @prisma/client's generated code
+  // straight into the app bundle too, which breaks its runtime engine-path
+  // resolution. This keeps @prisma/client a real, unbundled `require()`
+  // resolved by Node at runtime instead. For that resolution to actually
+  // succeed in the deployed function (not just in local dev, where the full
+  // monorepo node_modules tree is present), @prisma/client must also be a
+  // *direct* dependency of this app (see apps/web/package.json) — pnpm only
+  // symlinks a package into the node_modules of packages that declare it
+  // directly, and Next's file tracer/standalone output only preserves
+  // symlinks reachable via a package's own node_modules chain.
   serverExternalPackages: ['@prisma/client'],
 };
 
