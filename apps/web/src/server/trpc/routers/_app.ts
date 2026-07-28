@@ -7,9 +7,10 @@ import { onboardingRouter } from './onboarding';
 import { momentumRouter } from './momentum';
 import { viberateRouter } from './viberate';
 import { apiKeyRouter } from './api-key';
+import { fanRouter } from './fan';
 
 /**
- * Root router. Add a new domain (e.g. `fan`, `integration`) by creating
+ * Root router. Add a new domain (e.g. `integration`) by creating
  * `routers/<domain>.ts` following the pattern in `page.ts`/`block.ts` and
  * mounting it here — the client's type-safe API surface updates
  * automatically, no codegen step required.
@@ -23,6 +24,7 @@ export const appRouter = router({
   momentum: momentumRouter,
   viberate: viberateRouter,
   apiKey: apiKeyRouter,
+  fan: fanRouter,
 });
 
 export type AppRouter = typeof appRouter;

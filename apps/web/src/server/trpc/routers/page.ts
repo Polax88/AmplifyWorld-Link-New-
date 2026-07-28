@@ -4,6 +4,8 @@ import type { Prisma } from '@amplifyworld/database';
 import { domainEvents, blockRegistry, templateRegistry } from '@amplifyworld/core';
 import { router, protectedProcedure, publicProcedure } from '../trpc';
 import type { Context } from '../context';
+import { env } from '../../../env';
+import { regenerateDemoData } from '../../services/demo/generate-demo-artist';
 
 const themeSchema = z.record(z.string(), z.unknown()).default({});
 
@@ -142,6 +144,22 @@ export const pageRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Demo-only: wipes and rebuilds this page's synthetic AMI/Viberate history
+   * and fan data (see `generate-demo-artist.ts`'s `regenerateDemoData`) so a
+   * demo that's sat around for a while can refresh in place. Gated on
+   * `DEMO_MODE` in addition to ownership — never callable against a real
+   * deployment's data, even by the page's own owner.
+   */
+  regenerateDemoData: protectedProcedure.input(z.object({ pageId: z.string() })).mutation(async ({ ctx, input }) => {
+    if (!env.DEMO_MODE) {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Demo mode is not enabled.' });
+    }
+    await assertOwnership(ctx, input.pageId);
+    await regenerateDemoData(input.pageId);
+    return { success: true };
+  }),
 });
 
 async function assertOwnership(ctx: Context & { session: NonNullable<Context['session']> }, pageId: string) {

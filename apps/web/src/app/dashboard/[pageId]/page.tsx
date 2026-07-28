@@ -11,7 +11,7 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import { ArrowLeft, Smartphone, Eye, MousePointerClick } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Smartphone, Eye, MousePointerClick } from 'lucide-react';
 import type { SocialBlockConfig } from '@amplifyworld/core';
 import { Button, Card, IconButton, Modal } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
@@ -21,13 +21,15 @@ import { PagePreview } from '../../../components/PagePreview';
 import { ShareQrButton } from '../../../components/ShareQrButton';
 import { MomentumPanel } from '../../../components/MomentumPanel';
 import { ConnectedPlatformsCard } from '../../../components/ConnectedPlatformsCard';
+import { ConnectPlatformsCard } from '../../../components/ConnectPlatformsCard';
+import { FansCard } from '../../../components/FansCard';
 import { useDashboardContext } from '../../../components/DashboardContext';
 import { SortableBlockCard } from './SortableBlockCard';
 
 export default function PageEditor({ params }: { params: Promise<{ pageId: string }> }) {
   const { pageId } = use(params);
   const utils = trpc.useUtils();
-  const { viberateEnabled } = useDashboardContext();
+  const { viberateEnabled, demoModeEnabled } = useDashboardContext();
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -47,6 +49,13 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
     onSuccess: () => {
       invalidatePage();
       setEditingBlockId(null);
+    },
+  });
+  const regenerateDemoData = trpc.page.regenerateDemoData.useMutation({
+    onSuccess: () => {
+      invalidatePage();
+      utils.momentum.forPage.invalidate({ pageId });
+      utils.fan.listForPage.invalidate({ pageId });
     },
   });
 
@@ -81,6 +90,16 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {demoModeEnabled ? (
+              <IconButton
+                aria-label="Regenerate demo data"
+                variant="secondary"
+                onClick={() => regenerateDemoData.mutate({ pageId })}
+                disabled={regenerateDemoData.isPending}
+              >
+                <RefreshCw className={regenerateDemoData.isPending ? 'size-4 animate-spin' : 'size-4'} />
+              </IconButton>
+            ) : null}
             <ShareQrButton handle={page.handle} />
             <Button
               variant="outline"
@@ -130,6 +149,18 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           viberateArtistId={page.viberateArtistId}
           viberateConnectedAt={page.viberateConnectedAt}
         />
+
+        {demoModeEnabled ? (
+          <ConnectPlatformsCard
+            pageId={pageId}
+            pageHandle={page.handle}
+            connectedPlatforms={page.blocks
+              .filter((block) => block.type === 'social')
+              .map((block) => (block.config as SocialBlockConfig).platform)}
+          />
+        ) : null}
+
+        <FansCard pageId={pageId} />
 
         <section className="flex flex-col gap-3">
           <div>

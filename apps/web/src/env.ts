@@ -34,6 +34,13 @@ const envSchema = z.object({
   // server/services/artist-intelligence always resolves to a no-op today
   // regardless of this value. Defined now so it's ready to wire up.
   VIBERATE_API_KEY: z.string().min(1).optional(),
+
+  // Turns this deployment into a fully-populated demo: a "Continue as Demo
+  // Artist" sign-in (no real OAuth), and every integration below (Viberate,
+  // Spotify search, DSP "connect" flows) swaps to a realistic mock instead of
+  // its no-op fallback. Never affects behavior when unset — same
+  // "optional, presence-checked" convention as every other flag above.
+  DEMO_MODE: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

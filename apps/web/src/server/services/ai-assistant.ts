@@ -8,6 +8,7 @@ import {
   type DraftPageCopyResult,
 } from '@amplifyworld/core';
 import { env } from '../../env';
+import { platformUrl } from '../../lib/platform-urls';
 
 const MODEL = 'claude-sonnet-5';
 
@@ -77,20 +78,6 @@ export class ClaudeAiAssistant implements AiAssistant {
   }
 }
 
-const PLATFORM_URL_TEMPLATES: Record<string, (handle: string) => string> = {
-  instagram: (handle) => `https://instagram.com/${handle}`,
-  tiktok: (handle) => `https://tiktok.com/@${handle}`,
-  youtube: (handle) => `https://youtube.com/@${handle}`,
-  spotify: (handle) => `https://open.spotify.com/artist/${handle}`,
-  apple_music: (handle) => `https://music.apple.com/artist/${handle}`,
-  soundcloud: (handle) => `https://soundcloud.com/${handle}`,
-  deezer: (handle) => `https://deezer.com/artist/${handle}`,
-  facebook: (handle) => `https://facebook.com/${handle}`,
-  x: (handle) => `https://x.com/${handle}`,
-  discord: (handle) => `https://discord.gg/${handle}`,
-  other: (handle) => `https://${handle}`,
-};
-
 /**
  * No-network fallback used when Claude isn't configured, or when a real call
  * fails — the wizard always produces a usable draft. Deterministic, no I/O.
@@ -117,7 +104,7 @@ export const templateOnlyAiAssistant: AiAssistant = {
             config: {
               ...(seed.config as object),
               handle: match.handle,
-              url: (PLATFORM_URL_TEMPLATES[platform] ?? PLATFORM_URL_TEMPLATES.other!)(match.handle),
+              url: platformUrl(platform, match.handle),
             },
           },
         ];

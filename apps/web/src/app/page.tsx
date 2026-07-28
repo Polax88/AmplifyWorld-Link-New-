@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Link2, HeartHandshake, BarChart3, ArrowRight } from 'lucide-react';
-import { Button, Logo } from '@amplifyworld/ui';
+import { Badge, Button, Logo } from '@amplifyworld/ui';
+import { env } from '../env';
 
 const features = [
   {
@@ -24,7 +25,10 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col px-6">
       <nav className="flex items-center justify-between py-8">
-        <Logo height={22} />
+        <div className="flex items-center gap-3">
+          <Logo height={22} />
+          {env.DEMO_MODE ? <Badge tone="brand">Demo Mode</Badge> : null}
+        </div>
         <Link href="/dashboard">
           <Button variant="outline" size="sm">
             Dashboard

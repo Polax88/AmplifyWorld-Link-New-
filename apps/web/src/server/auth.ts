@@ -14,6 +14,14 @@ import { env } from '../env';
  * (with zero sign-in options, same as before) until credentials exist —
  * to add another provider (Google, Discord), follow the same pattern.
  */
+// Auth.js normally switches the session cookie's name (and `Secure` prefix)
+// based on whether it thinks the request is HTTPS. Demo mode's sign-in
+// (server/services/demo/start-demo-session.ts) sets this cookie directly —
+// bypassing Auth.js's Credentials-provider-plus-database-session rough edge
+// — so the name is pinned here to a single, known constant both sides agree
+// on, rather than each independently guessing Auth.js's default logic.
+export const SESSION_COOKIE_NAME = 'authjs.session-token';
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: 'database' },
@@ -21,6 +29,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // own Host header isn't the public one) — trust it and rely on the
   // proxy/network layer to keep external requests from spoofing that header.
   trustHost: true,
+  cookies: {
+    sessionToken: {
+      name: SESSION_COOKIE_NAME,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: env.NODE_ENV === 'production',
+      },
+    },
+  },
   providers:
     env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET
       ? [Spotify({ clientId: env.SPOTIFY_CLIENT_ID, clientSecret: env.SPOTIFY_CLIENT_SECRET })]
