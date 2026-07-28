@@ -2,7 +2,7 @@
 //
 // Design notes for future maintainers:
 // - `Block` is intentionally polymorphic (`type` + freeform `config` Json).
-//   New block kinds (embeds, token-gates, tip jars, etc.) are added in the
+//   New block kinds (embeds, token-gates, etc.) are added in the
 //   `@amplifyworld/core` block registry and DO NOT require a migration here.
 // - `FeatureFlag` supports progressive rollout so new features can ship dark
 //   and be turned on per-environment/per-percentage without a redeploy.
@@ -13,7 +13,7 @@
 //   and independently deployable.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // No custom `output` — this generates into the default, node_modules-
   // integrated location (@prisma/client). A custom output path outside the
   // app's own directory (this is a pnpm monorepo; the schema lives in
@@ -29,7 +29,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Pooled connection (e.g. Neon/PgBouncer) — used at runtime by serverless
   // functions, which would otherwise exhaust the Postgres connection limit.
   url       = env("DATABASE_URL")
@@ -58,11 +58,19 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts              Account[]
-  sessions              Session[]
-  pages                 Page[]
-  webhookSubscriptions  WebhookSubscription[]
+  // Fictional in-app points currency ($AMPS) — no real monetary value, no
+  // wallet/blockchain involved. See AmpsTransaction for the append-only
+  // ledger this balance is derived from.
+  ampsBalance    Int      @default(0)
+  unlockedThemes String[] @default([]) // keys into @amplifyworld/core's THEME_PRESETS
+
+  accounts               Account[]
+  sessions               Session[]
+  pages                  Page[]
+  webhookSubscriptions   WebhookSubscription[]
   integrationConnections IntegrationConnection[]
+  ampsTransactions       AmpsTransaction[]
+  predictionPicks        PredictionPick[]
 
   @@map("users")
 }
@@ -118,16 +126,16 @@ enum PageStatus {
 }
 
 model Page {
-  id          String     @id @default(cuid())
-  handle      String     @unique // public URL slug, e.g. amplify.world/link/{handle}
-  title       String
-  bio         String?
-  avatarUrl   String?
-  theme       Json       @default("{}") // brand colors/fonts, validated in application code
-  status      PageStatus @default(DRAFT)
-  ownerId     String
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id        String     @id @default(cuid())
+  handle    String     @unique // public URL slug, e.g. amplify.world/link/{handle}
+  title     String
+  bio       String?
+  avatarUrl String?
+  theme     Json       @default("{}") // { themeKey, layout } — validated against @amplifyworld/core's theme registry
+  status    PageStatus @default(DRAFT)
+  ownerId   String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   // Set once an artist connects a Viberate match (onboarding wizard or the
   // "Connect Viberate" editor action) — null means not connected, and every
@@ -136,15 +144,27 @@ model Page {
   viberateArtistId    String?
   viberateConnectedAt DateTime?
 
-  owner            User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  blocks           Block[]
-  subscriptions    FanSubscription[]
-  analyticsEvents  AnalyticsEvent[]
-  momentumScores   PageMomentumScore[]
+  // Discover: primary genre/market, used for the genre x geography trending
+  // view. Optional — older pages and pages never connected to Viberate may
+  // not have one.
+  genre   String?
+  country String? // ISO country code, primary market
+
+  // Set (with an AMPS spend) to rank/badge this page as "Boosted" in
+  // Discover while in the future — see AmpsTransaction's LEADERBOARD_BOOST.
+  discoverBoostedUntil DateTime?
+
+  owner             User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  blocks            Block[]
+  subscriptions     FanSubscription[]
+  analyticsEvents   AnalyticsEvent[]
+  momentumScores    PageMomentumScore[]
   viberateSnapshots ViberateSnapshot[]
-  momentumAlerts   MomentumAlert[]
+  momentumAlerts    MomentumAlert[]
+  predictionMarket  PredictionMarket?
 
   @@index([ownerId])
+  @@index([genre, country])
   @@map("pages")
 }
 
@@ -182,10 +202,10 @@ model Fan {
 }
 
 model FanSubscription {
-  id             String   @id @default(cuid())
-  pageId         String
-  fanId          String
-  subscribedAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  pageId       String
+  fanId        String
+  subscribedAt DateTime @default(now())
 
   page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
   fan  Fan  @relation(fields: [fanId], references: [id], onDelete: Cascade)
@@ -366,4 +386,71 @@ model WebhookSubscription {
   owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@map("webhook_subscriptions")
+}
+
+// ---------------------------------------------------------------------------
+// $AMPS — fictional in-app points currency (no real monetary/token value)
+// ---------------------------------------------------------------------------
+
+enum AmpsTransactionType {
+  SIGNUP_BONUS
+  MOMENTUM_MILESTONE
+  FAN_ENGAGEMENT
+  PREDICTION_STAKE
+  PREDICTION_PAYOUT
+  LEADERBOARD_BOOST
+  THEME_UNLOCK
+}
+
+model AmpsTransaction {
+  id           String              @id @default(cuid())
+  userId       String
+  type         AmpsTransactionType
+  amount       Int // signed: positive = earn, negative = spend
+  balanceAfter Int
+  description  String
+  metadata     Json                @default("{}")
+  createdAt    DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("amps_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Prediction markets — fictional, playful "who will break out" points game.
+// Demo picks resolve instantly against the market's stated odds (no shared
+// future event to wait for) — never real money, never a real gambling product.
+// ---------------------------------------------------------------------------
+
+model PredictionMarket {
+  id        String   @id @default(cuid())
+  pageId    String   @unique // the fictional "up-and-coming" artist being predicted on
+  question  String
+  odds      Float // consensus probability, 0-1 — each pick resolves instantly against this
+  closesAt  DateTime // cosmetic — this demo has no shared future event to wait for
+  createdAt DateTime @default(now())
+
+  page  Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  picks PredictionPick[]
+
+  @@map("prediction_markets")
+}
+
+model PredictionPick {
+  id          String   @id @default(cuid())
+  marketId    String
+  userId      String
+  stakeAmount Int
+  hit         Boolean // resolved instantly on creation, never left pending
+  payout      Int // 0 on a miss
+  createdAt   DateTime @default(now())
+
+  market PredictionMarket @relation(fields: [marketId], references: [id], onDelete: Cascade)
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([marketId])
+  @@index([userId])
+  @@map("prediction_picks")
 }

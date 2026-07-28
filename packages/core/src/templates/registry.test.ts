@@ -37,11 +37,11 @@ describe('TemplateRegistry', () => {
     expect(() => registry.require('nope')).toThrow(/Unknown template/);
   });
 
-  it('registers the musician-starter template with a tip-jar block by default', () => {
+  it('registers the musician-starter template with an embed block by default', () => {
     const registry = new TemplateRegistry();
     registerCoreTemplates(registry);
 
     const template = registry.require('musician-starter');
-    expect(template.blocks.map((b) => b.type)).toContain('tip-jar');
+    expect(template.blocks.map((b) => b.type)).toContain('embed');
   });
 });

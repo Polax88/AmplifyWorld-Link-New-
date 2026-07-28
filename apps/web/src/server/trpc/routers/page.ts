@@ -1,13 +1,12 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import type { Prisma } from '@amplifyworld/database';
-import { domainEvents, blockRegistry, templateRegistry } from '@amplifyworld/core';
+import { domainEvents, blockRegistry, templateRegistry, pageThemeSchema, getThemePreset } from '@amplifyworld/core';
 import { router, protectedProcedure, publicProcedure } from '../trpc';
 import type { Context } from '../context';
 import { isDemoMode } from '../../../env';
 import { regenerateDemoData } from '../../services/demo/generate-demo-artist';
-
-const themeSchema = z.record(z.string(), z.unknown()).default({});
+import { generateBioSuggestions } from '../../services/bio-suggestions';
 
 export const pageRouter = router({
   listMine: protectedProcedure.query(({ ctx }) =>
@@ -74,18 +73,45 @@ export const pageRouter = router({
         id: z.string(),
         title: z.string().min(1).max(120).optional(),
         bio: z.string().max(500).optional(),
-        avatarUrl: z.string().url().optional(),
-        theme: themeSchema.optional(),
+        avatarUrl: z.union([z.string().url(), z.literal('')]).optional(),
+        theme: pageThemeSchema.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, theme, ...data } = input;
-      await assertOwnership(ctx, id);
+      const { id, theme, avatarUrl, ...data } = input;
+      const page = await assertOwnership(ctx, id);
+
+      // A premium theme can only be applied once the owner has spent AMPS
+      // to unlock it (see amps.unlockTheme) — enforced here too, not just
+      // by disabling the option client-side, since this is the one place
+      // that actually persists the choice.
+      if (theme) {
+        const user = await ctx.prisma.user.findUniqueOrThrow({ where: { id: page.ownerId } });
+        const preset = getThemePreset(theme.themeKey);
+        if (preset.isPremium && !user.unlockedThemes.includes(preset.key)) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: `"${preset.displayName}" hasn't been unlocked yet.` });
+        }
+      }
+
       return ctx.prisma.page.update({
         where: { id },
-        data: { ...data, ...(theme ? { theme: theme as Prisma.InputJsonValue } : {}) },
+        data: {
+          ...data,
+          ...(avatarUrl !== undefined ? { avatarUrl: avatarUrl || null } : {}),
+          ...(theme ? { theme: theme as Prisma.InputJsonValue } : {}),
+        },
       });
     }),
+
+  /**
+   * Mocked "Write with AI" bio suggestions — deterministic, no LLM call (see
+   * bio-suggestions.ts). Purely a generator; the artist still picks one and
+   * hits Save (the `update` mutation above) to persist it.
+   */
+  suggestBio: protectedProcedure.input(z.object({ pageId: z.string() })).query(async ({ ctx, input }) => {
+    const page = await assertOwnership(ctx, input.pageId);
+    return { suggestions: generateBioSuggestions({ stageName: page.title }) };
+  }),
 
   setStatus: protectedProcedure
     .input(z.object({ id: z.string(), status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']) }))

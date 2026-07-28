@@ -11,15 +11,18 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
-import { ArrowLeft, RefreshCw, Smartphone, Eye, MousePointerClick } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Smartphone, Eye, MousePointerClick, Settings } from 'lucide-react';
 import type { SocialBlockConfig } from '@amplifyworld/core';
+import { pageThemeSchema } from '@amplifyworld/core';
 import { Button, Card, IconButton, Modal } from '@amplifyworld/ui';
 import { trpc } from '../../../lib/trpc/client';
 import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
 import { BlockConfigForm } from '../../../components/blocks/BlockConfigForm';
 import { PagePreview } from '../../../components/PagePreview';
+import { PageSettingsForm } from '../../../components/PageSettingsForm';
 import { ShareQrButton } from '../../../components/ShareQrButton';
 import { MomentumPanel } from '../../../components/MomentumPanel';
+import { AmpsBalanceCard } from '../../../components/AmpsBalanceCard';
 import { ConnectedPlatformsCard } from '../../../components/ConnectedPlatformsCard';
 import { ConnectPlatformsCard } from '../../../components/ConnectPlatformsCard';
 import { FansCard } from '../../../components/FansCard';
@@ -32,11 +35,13 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
   const { viberateEnabled, demoModeEnabled } = useDashboardContext();
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const pageQuery = trpc.page.getById.useQuery({ id: pageId });
   const page = pageQuery.data;
   const summary = trpc.analytics.summaryForPage.useQuery({ pageId });
+  const ampsBalance = trpc.amps.myBalance.useQuery();
 
   const invalidatePage = () => utils.page.getById.invalidate({ id: pageId });
   const blockTypes = trpc.block.listAvailableTypes.useQuery();
@@ -101,6 +106,9 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
               </IconButton>
             ) : null}
             <ShareQrButton handle={page.handle} />
+            <IconButton aria-label="Edit page settings" variant="secondary" onClick={() => setSettingsOpen(true)}>
+              <Settings className="size-4" />
+            </IconButton>
             <Button
               variant="outline"
               size="sm"
@@ -139,6 +147,8 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
         ) : null}
 
         <MomentumPanel pageId={pageId} />
+
+        <AmpsBalanceCard pageId={pageId} />
 
         <ConnectedPlatformsCard
           pageId={pageId}
@@ -220,7 +230,13 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
       </div>
 
       <div className="hidden justify-self-center lg:sticky lg:top-24 lg:flex">
-        <PagePreview title={page.title} bio={page.bio} avatarUrl={page.avatarUrl} blocks={page.blocks} />
+        <PagePreview
+          title={page.title}
+          bio={page.bio}
+          avatarUrl={page.avatarUrl}
+          blocks={page.blocks}
+          theme={pageThemeSchema.parse(page.theme)}
+        />
       </div>
 
       <Modal
@@ -229,7 +245,29 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
         title="Live preview"
         className="flex w-auto max-w-none justify-center border-none bg-transparent p-0 shadow-none"
       >
-        <PagePreview title={page.title} bio={page.bio} avatarUrl={page.avatarUrl} blocks={page.blocks} />
+        <PagePreview
+          title={page.title}
+          bio={page.bio}
+          avatarUrl={page.avatarUrl}
+          blocks={page.blocks}
+          theme={pageThemeSchema.parse(page.theme)}
+        />
+      </Modal>
+
+      <Modal open={settingsOpen} onOpenChange={setSettingsOpen} title="Page settings">
+        <PageSettingsForm
+          pageId={page.id}
+          initialTitle={page.title}
+          initialBio={page.bio ?? ''}
+          initialAvatarUrl={page.avatarUrl ?? ''}
+          initialThemeKey={pageThemeSchema.parse(page.theme).themeKey}
+          initialLayout={pageThemeSchema.parse(page.theme).layout}
+          unlockedThemes={ampsBalance.data?.unlockedThemes ?? []}
+          onSaved={() => {
+            invalidatePage();
+            setSettingsOpen(false);
+          }}
+        />
       </Modal>
     </div>
   );

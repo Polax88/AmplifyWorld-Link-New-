@@ -23,9 +23,14 @@ import {
   slugify,
 } from './fixtures';
 import { buildFakeArtistSnapshot } from './fake-snapshot';
+import { recordAmpsTransaction } from '../amps-ledger';
 
 const HISTORY_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const SIGNUP_BONUS_AMPS = 500;
+const FAN_ENGAGEMENT_AMPS_PER_FAN = 5;
+const MOMENTUM_MILESTONES = [50, 70, 90];
+const MOMENTUM_MILESTONE_AMPS = 100;
 
 /**
  * Builds one brand-new, fully-populated demo artist: a published page with
@@ -38,6 +43,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export async function generateDemoArtist(userId: string): Promise<{ pageId: string; handle: string }> {
   const name = pick(ARTIST_NAMES);
   const genre = pick(GENRES);
+  const country = pick(COUNTRIES);
   const handle = `${slugify(name)}-${randomToken(4)}`;
   const viberateArtistId = `demo-${randomToken(10)}`;
 
@@ -48,14 +54,25 @@ export async function generateDemoArtist(userId: string): Promise<{ pageId: stri
       bio: `${genre[0]?.toUpperCase()}${genre.slice(1)} artist building a direct connection with fans, one release at a time.`,
       status: 'PUBLISHED',
       ownerId: userId,
+      genre,
+      country,
       viberateArtistId,
       viberateConnectedAt: new Date(),
     },
   });
 
   await createSmartLinkBlocks(page.id, name);
-  await generateAmiAndViberateHistory(page.id, name, genre, freshVisitorPool());
-  await generateFans(page.id);
+  const finalScore = await generateAmiAndViberateHistory(page.id, name, genre, freshVisitorPool());
+  const fanCount = await generateFans(page.id);
+
+  await recordAmpsTransaction(prisma, {
+    userId,
+    type: 'SIGNUP_BONUS',
+    amount: SIGNUP_BONUS_AMPS,
+    description: 'Welcome bonus for a new artist page',
+  });
+  await awardMomentumMilestones(userId, finalScore);
+  await awardFanEngagement(userId, fanCount);
 
   return { pageId: page.id, handle };
 }
@@ -90,8 +107,40 @@ export async function regenerateDemoData(pageId: string): Promise<void> {
     await prisma.fan.deleteMany({ where: { id: { in: staleFans.map((fan) => fan.id) } } });
   }
 
-  await generateAmiAndViberateHistory(pageId, page.title, genre, freshVisitorPool());
-  await generateFans(pageId);
+  const finalScore = await generateAmiAndViberateHistory(pageId, page.title, genre, freshVisitorPool());
+  const fanCount = await generateFans(pageId);
+
+  // Re-awards fan-engagement/milestone AMPS for the freshly-regenerated
+  // history each time — same "fresh sample" spirit as the history/fan data
+  // itself being fully replaced, not accumulated. This fictional points
+  // ledger has no real value, so repeated "Regenerate demo data" clicks
+  // topping up the balance again is an accepted simplification rather than
+  // something worth tracking idempotency for.
+  await awardMomentumMilestones(page.ownerId, finalScore);
+  await awardFanEngagement(page.ownerId, fanCount);
+}
+
+async function awardMomentumMilestones(userId: string, finalScore: number): Promise<void> {
+  for (const milestone of MOMENTUM_MILESTONES) {
+    if (finalScore >= milestone) {
+      await recordAmpsTransaction(prisma, {
+        userId,
+        type: 'MOMENTUM_MILESTONE',
+        amount: MOMENTUM_MILESTONE_AMPS,
+        description: `Reached a ${milestone} AMI score`,
+      });
+    }
+  }
+}
+
+async function awardFanEngagement(userId: string, fanCount: number): Promise<void> {
+  if (fanCount <= 0) return;
+  await recordAmpsTransaction(prisma, {
+    userId,
+    type: 'FAN_ENGAGEMENT',
+    amount: fanCount * FAN_ENGAGEMENT_AMPS_PER_FAN,
+    description: `${fanCount} fans engaged with your page`,
+  });
 }
 
 function freshVisitorPool(): string[] {
@@ -109,12 +158,6 @@ async function createSmartLinkBlocks(pageId: string, name: string): Promise<void
       position: 2 + index,
       config: { platform, handle: slug, url: socialUrl(platform, slug) },
     })),
-    {
-      pageId,
-      type: 'tip-jar',
-      position: 2 + DEMO_SOCIAL_PLATFORMS.length,
-      config: { label: 'Support this artist', checkoutUrl: 'https://example.com/tip' },
-    },
   ];
 
   await prisma.block.createMany({ data: blocks });
@@ -144,7 +187,7 @@ async function generateAmiAndViberateHistory(
   name: string,
   genre: string,
   visitorPool: string[],
-): Promise<void> {
+): Promise<number> {
   const metricsHistory: DailyPageMetrics[] = [];
   const rankScoreHistory: number[] = [];
   const rawEvents: Prisma.AnalyticsEventCreateManyInput[] = [];
@@ -211,6 +254,8 @@ async function generateAmiAndViberateHistory(
     prisma.viberateSnapshot.createMany({ data: snapshotRows }),
     prisma.analyticsEvent.createMany({ data: rawEvents }),
   ]);
+
+  return previousScore;
 }
 
 function buildAnonymousEvent(pageId: string, date: Date, visitorPool: string[]): Prisma.AnalyticsEventCreateManyInput {
@@ -226,7 +271,7 @@ function buildAnonymousEvent(pageId: string, date: Date, visitorPool: string[]):
   };
 }
 
-async function generateFans(pageId: string): Promise<void> {
+async function generateFans(pageId: string): Promise<number> {
   const fanCount = randInt(15, 40);
   // IDs are generated here (rather than left to Fan's `@default(cuid())`)
   // so all `fanCount` rows can go through a single `createMany` — many
@@ -275,6 +320,8 @@ async function generateFans(pageId: string): Promise<void> {
 
   await prisma.fanSubscription.createMany({ data: subscriptions });
   await prisma.analyticsEvent.createMany({ data: events });
+
+  return fanCount;
 }
 
 function buildSources(visits: number): Record<string, number> {

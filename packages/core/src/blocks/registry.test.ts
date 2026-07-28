@@ -58,7 +58,6 @@ describe('BlockRegistry', () => {
       'gated-content',
       'link',
       'social',
-      'tip-jar',
     ]);
   });
 

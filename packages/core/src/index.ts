@@ -22,3 +22,6 @@ export * from './momentum/types';
 export * from './momentum/score';
 
 export * from './artist-intelligence/types';
+
+export * from './themes/types';
+export * from './themes/registry';

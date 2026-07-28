@@ -1,6 +1,8 @@
+import type { CSSProperties } from 'react';
 import { notFound } from 'next/navigation';
 import { prisma } from '@amplifyworld/database';
-import { Avatar, Logo } from '@amplifyworld/ui';
+import { Avatar, Logo, cn } from '@amplifyworld/ui';
+import { getThemePreset, pageThemeSchema } from '@amplifyworld/core';
 import '../../server/bootstrap';
 import { analytics } from '../../server/services/analytics';
 import { getRequestSignals } from '../../server/services/request-signals';
@@ -23,17 +25,33 @@ export default async function ArtistPage({ params }: { params: Promise<{ handle:
   const signals = await getRequestSignals();
   await analytics.track({ type: 'PAGE_VIEW', pageId: page.id, ...signals });
 
+  const theme = pageThemeSchema.parse(page.theme);
+  const preset = getThemePreset(theme.themeKey);
+  const compact = theme.layout === 'compact';
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center gap-8 px-6 py-16 sm:py-20">
+    <main
+      className={cn(
+        'mx-auto flex min-h-screen max-w-md flex-col items-center px-6 sm:py-20',
+        compact ? 'gap-5 py-10' : 'gap-8 py-16',
+      )}
+      style={{ '--theme-accent': preset.accentColor } as CSSProperties}
+    >
       <div className="flex animate-fade-up flex-col items-center gap-4 text-center">
-        <Avatar src={page.avatarUrl} name={page.title} size="xl" ring />
+        <div className="relative flex items-center justify-center">
+          <div
+            className="absolute size-32 rounded-full opacity-30 blur-3xl"
+            style={{ background: 'var(--theme-accent)' }}
+          />
+          <Avatar src={page.avatarUrl} name={page.title} size="xl" ring className="relative" />
+        </div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{page.title}</h1>
           {page.bio ? <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-white/60">{page.bio}</p> : null}
         </div>
       </div>
 
-      <div className="flex w-full flex-col gap-3">
+      <div className={cn('flex w-full flex-col', compact ? 'gap-2' : 'gap-3')}>
         {page.blocks.map((block, index) => (
           <div
             key={block.id}

@@ -27,6 +27,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {isDemoMode ? <Badge tone="brand">Demo Mode</Badge> : null}
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/dashboard/discover" className="text-sm text-white/60 hover:text-white">
+              Discover
+            </Link>
+            <Link href="/dashboard/predictions" className="text-sm text-white/60 hover:text-white">
+              Predictions
+            </Link>
             {session.user.role === 'ADMIN' ? (
               <>
                 <Link href="/dashboard/admin/momentum" className="text-sm text-white/60 hover:text-white">

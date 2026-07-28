@@ -52,7 +52,7 @@ export function SocialBlockView({ config }: { config: SocialBlockConfig }) {
       rel="noreferrer"
       className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/80 transition-all duration-150 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
     >
-      <Icon className="size-4 text-white/50 group-hover:text-brand-400" />
+      <Icon className="size-4 text-white/50 group-hover:text-[var(--theme-accent,var(--color-brand-400))]" />
       <span>{platformLabel[config.platform]}</span>
       <span className="text-white/40">@{config.handle}</span>
     </a>

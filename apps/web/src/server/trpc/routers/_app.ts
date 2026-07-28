@@ -8,6 +8,9 @@ import { momentumRouter } from './momentum';
 import { viberateRouter } from './viberate';
 import { apiKeyRouter } from './api-key';
 import { fanRouter } from './fan';
+import { ampsRouter } from './amps';
+import { discoverRouter } from './discover';
+import { predictionsRouter } from './predictions';
 
 /**
  * Root router. Add a new domain (e.g. `integration`) by creating
@@ -25,6 +28,9 @@ export const appRouter = router({
   viberate: viberateRouter,
   apiKey: apiKeyRouter,
   fan: fanRouter,
+  amps: ampsRouter,
+  discover: discoverRouter,
+  predictions: predictionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

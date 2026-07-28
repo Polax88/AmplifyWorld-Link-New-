@@ -6,7 +6,6 @@ import type {
   LinkBlockConfig,
   SocialBlockConfig,
   EmbedBlockConfig,
-  TipJarBlockConfig,
   GatedContentBlockConfig,
 } from '@amplifyworld/core';
 import { platformLabel } from './SocialBlockView';
@@ -40,8 +39,6 @@ export function BlockConfigForm({
       return <SocialForm config={config as SocialBlockConfig} onSave={onSave} saving={saving} />;
     case 'embed':
       return <EmbedForm config={config as EmbedBlockConfig} onSave={onSave} saving={saving} />;
-    case 'tip-jar':
-      return <TipJarForm config={config as TipJarBlockConfig} onSave={onSave} saving={saving} />;
     case 'gated-content':
       return <GatedContentForm config={config as GatedContentBlockConfig} onSave={onSave} saving={saving} />;
     default:
@@ -144,30 +141,6 @@ function EmbedForm({ config, onSave, saving }: FormProps<EmbedBlockConfig>) {
       </Select>
       <Input label="Embed URL" type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} required />
       <Input label="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <SaveButton saving={saving} />
-    </form>
-  );
-}
-
-function TipJarForm({ config, onSave, saving }: FormProps<TipJarBlockConfig>) {
-  const [label, setLabel] = useState(config.label);
-  const [checkoutUrl, setCheckoutUrl] = useState(config.checkoutUrl);
-
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    onSave({ ...config, label, checkoutUrl });
-  }
-
-  return (
-    <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
-      <Input label="Label" value={label} onChange={(e) => setLabel(e.target.value)} required />
-      <Input
-        label="Checkout URL"
-        type="url"
-        value={checkoutUrl}
-        onChange={(e) => setCheckoutUrl(e.target.value)}
-        required
-      />
       <SaveButton saving={saving} />
     </form>
   );

@@ -35,7 +35,7 @@ ${facts}
 
 Write a short, confident bio in their voice (max 2 sentences, under 280 characters) — no generic filler, no emoji spam.
 
-Then suggest 3-5 blocks for their page, each one of these types: "link", "social", "embed", "tip-jar". Reuse any social handles given above as "social" blocks with a plausible profile URL. Always include exactly one "tip-jar" block with label "Support this artist" and checkoutUrl "https://".
+Then suggest 3-5 blocks for their page, each one of these types: "link", "social", "embed". Reuse any social handles given above as "social" blocks with a plausible profile URL.
 
 Respond with ONLY minified JSON in this exact shape, no markdown fences, no commentary:
 {"bio": string, "suggestedBlocks": [{"type": string, "config": object}]}`;

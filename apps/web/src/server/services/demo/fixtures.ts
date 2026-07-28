@@ -65,6 +65,37 @@ export const FAN_LAST_NAMES = [
   'Costa',
 ] as const;
 
+/** Word banks combined into synthetic band names for Discover's fictional artist roster. */
+export const ROSTER_NAME_PREFIXES = [
+  'Neon',
+  'Velvet',
+  'Paper',
+  'Glass',
+  'Amber',
+  'Coral',
+  'Lunar',
+  'Wild',
+  'Echo',
+  'Golden',
+  'Iron',
+  'Silver',
+] as const;
+
+export const ROSTER_NAME_SUFFIXES = [
+  'Atlas',
+  'Horizon',
+  'Static',
+  'Season',
+  'Habits',
+  'Rivers',
+  'Signal',
+  'Ember',
+  'Canyon',
+  'Runner',
+  'Bloom',
+  'Tide',
+] as const;
+
 /** Platforms every demo artist gets a "connected" social block for, plus a plausible handle template. */
 export const DEMO_SOCIAL_PLATFORMS: ArtistPlatform[] = [
   'spotify',

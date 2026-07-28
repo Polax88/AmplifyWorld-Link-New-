@@ -1,7 +1,7 @@
 # AmplifyWorld Link
 
 A page for every way a fan can support an artist — links, socials, media embeds,
-tip jars, and gated content — built to grow with new features without
+and gated content — built to grow with new features without
 rewrites. See [ARCHITECTURE.md](./ARCHITECTURE.md) for how the extensibility
 model works and how to add to it.
 

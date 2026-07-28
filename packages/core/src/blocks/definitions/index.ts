@@ -2,14 +2,12 @@ import type { BlockRegistry } from '../registry';
 import { linkBlock } from './link';
 import { socialBlock } from './social';
 import { embedBlock } from './embed';
-import { tipJarBlock } from './tip-jar';
 import { gatedContentBlock } from './gated-content';
 
 export const coreBlockDefinitions = [
   linkBlock,
   socialBlock,
   embedBlock,
-  tipJarBlock,
   gatedContentBlock,
 ];
 
@@ -23,5 +21,4 @@ export function registerCoreBlocks(registry: BlockRegistry): void {
 export * from './link';
 export * from './social';
 export * from './embed';
-export * from './tip-jar';
 export * from './gated-content';

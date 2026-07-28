@@ -1,8 +1,7 @@
-import type { LinkBlockConfig, SocialBlockConfig, EmbedBlockConfig, TipJarBlockConfig, GatedContentBlockConfig } from '@amplifyworld/core';
+import type { LinkBlockConfig, SocialBlockConfig, EmbedBlockConfig, GatedContentBlockConfig } from '@amplifyworld/core';
 import { LinkBlockView } from './LinkBlockView';
 import { SocialBlockView } from './SocialBlockView';
 import { EmbedBlockView } from './EmbedBlockView';
-import { TipJarBlockView } from './TipJarBlockView';
 import { GatedContentBlockView } from './GatedContentBlockView';
 
 export interface RenderableBlock {
@@ -25,8 +24,6 @@ export function BlockRenderer({ block }: { block: RenderableBlock }) {
       return <SocialBlockView config={block.config as SocialBlockConfig} />;
     case 'embed':
       return <EmbedBlockView config={block.config as EmbedBlockConfig} />;
-    case 'tip-jar':
-      return <TipJarBlockView pageId={block.pageId} blockId={block.id} config={block.config as TipJarBlockConfig} />;
     case 'gated-content':
       return <GatedContentBlockView config={block.config as GatedContentBlockConfig} />;
     default:
