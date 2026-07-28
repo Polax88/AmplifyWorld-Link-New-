@@ -3,7 +3,7 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { IconButton } from '@amplifyworld/ui';
+import { IconButton, Button } from '@amplifyworld/ui';
 import { trpc } from '../../../../lib/trpc/client';
 import { FansTable } from '../../../../components/FansTable';
 
@@ -13,18 +13,25 @@ export default function FansPage({ params }: { params: Promise<{ pageId: string 
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <Link href={`/dashboard/${pageId}` as never}>
-          <IconButton aria-label="Back to hub" variant="secondary">
-            <ArrowLeft className="size-4" />
-          </IconButton>
-        </Link>
-        <div>
-          <h1 className="text-lg font-semibold leading-tight">Fans</h1>
-          <p className="text-sm text-white/50">
-            Everyone who&apos;s subscribed to {page.data?.title ?? 'this page'}, and how they&apos;ve engaged.
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link href={`/dashboard/${pageId}` as never}>
+            <IconButton aria-label="Back to hub" variant="secondary">
+              <ArrowLeft className="size-4" />
+            </IconButton>
+          </Link>
+          <div>
+            <h1 className="text-lg font-semibold leading-tight">Fans</h1>
+            <p className="text-sm text-white/50">
+              Everyone who&apos;s subscribed to {page.data?.title ?? 'this page'}, and how they&apos;ve engaged.
+            </p>
+          </div>
         </div>
+        <Link href={`/dashboard/${pageId}/fans/graph` as never}>
+          <Button variant="ghost" size="sm">
+            Graph
+          </Button>
+        </Link>
       </div>
 
       <FansTable pageId={pageId} />

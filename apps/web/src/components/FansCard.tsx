@@ -16,12 +16,20 @@ export function FansCard({ pageId }: { pageId: string }) {
           <Users className="size-3.5" />
           Fans
         </span>
-        <Link
-          href={`/dashboard/${pageId}/fans` as never}
-          className="text-xs font-medium text-brand-400 hover:text-brand-300"
-        >
-          View all
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/dashboard/${pageId}/fans/graph` as never}
+            className="text-xs font-medium text-white/50 hover:text-white/70"
+          >
+            Graph
+          </Link>
+          <Link
+            href={`/dashboard/${pageId}/fans` as never}
+            className="text-xs font-medium text-brand-400 hover:text-brand-300"
+          >
+            View all
+          </Link>
+        </div>
       </div>
 
       {fans.data && fans.data.length > 0 ? (
