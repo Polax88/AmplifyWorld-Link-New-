@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@amplifyworld/database';
-import { env } from '../../../env';
+import { env, isDemoMode } from '../../../env';
 import { SESSION_COOKIE_NAME } from '../../auth';
 import { generateDemoArtist } from './generate-demo-artist';
 
@@ -21,7 +21,24 @@ const SESSION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
  * rough edge, and this app already uses database sessions everywhere else.
  */
 export async function startDemoSession(): Promise<void> {
-  if (!env.DEMO_MODE) {
+  await createDemoArtistSession();
+  redirect('/dashboard');
+}
+
+/**
+ * The marketing homepage's "See an example" button — same underlying demo
+ * artist + session as `startDemoSession`, but lands on the fresh artist's
+ * live public page instead of the dashboard. Never depends on a
+ * previously-seeded page existing (e.g. a `pnpm db:seed` run against this
+ * deployment's database), which a static link to a fixed handle would.
+ */
+export async function startDemoPreview(): Promise<void> {
+  const { handle } = await createDemoArtistSession();
+  redirect(`/${handle}`);
+}
+
+async function createDemoArtistSession(): Promise<{ handle: string }> {
+  if (!isDemoMode) {
     throw new Error('Demo mode is not enabled.');
   }
 
@@ -35,7 +52,7 @@ export async function startDemoSession(): Promise<void> {
     },
   });
 
-  await generateDemoArtist(user.id);
+  const { handle } = await generateDemoArtist(user.id);
 
   const sessionToken = randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + SESSION_LIFETIME_MS);
@@ -50,7 +67,7 @@ export async function startDemoSession(): Promise<void> {
     expires,
   });
 
-  redirect('/dashboard');
+  return { handle };
 }
 
 /**

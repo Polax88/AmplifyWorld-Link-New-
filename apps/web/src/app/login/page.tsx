@@ -3,10 +3,10 @@ import { KeyRound, Sparkles } from 'lucide-react';
 import { Button, Card, Logo } from '@amplifyworld/ui';
 import { signIn } from '../../server/auth';
 import { startDemoSession } from '../../server/services/demo/start-demo-session';
-import { env } from '../../env';
+import { env, isDemoMode } from '../../env';
 
 export default function LoginPage() {
-  const demoModeEnabled = Boolean(env.DEMO_MODE);
+  const demoModeEnabled = isDemoMode;
   const spotifyConfigured = Boolean(env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET);
 
   return (

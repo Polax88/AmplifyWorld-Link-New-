@@ -4,7 +4,7 @@ import type { Prisma } from '@amplifyworld/database';
 import { domainEvents, blockRegistry, templateRegistry } from '@amplifyworld/core';
 import { router, protectedProcedure, publicProcedure } from '../trpc';
 import type { Context } from '../context';
-import { env } from '../../../env';
+import { isDemoMode } from '../../../env';
 import { regenerateDemoData } from '../../services/demo/generate-demo-artist';
 
 const themeSchema = z.record(z.string(), z.unknown()).default({});
@@ -153,7 +153,7 @@ export const pageRouter = router({
    * deployment's data, even by the page's own owner.
    */
   regenerateDemoData: protectedProcedure.input(z.object({ pageId: z.string() })).mutation(async ({ ctx, input }) => {
-    if (!env.DEMO_MODE) {
+    if (!isDemoMode) {
       throw new TRPCError({ code: 'FORBIDDEN', message: 'Demo mode is not enabled.' });
     }
     await assertOwnership(ctx, input.pageId);

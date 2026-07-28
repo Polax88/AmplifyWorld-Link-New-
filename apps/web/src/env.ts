@@ -38,8 +38,9 @@ const envSchema = z.object({
   // Turns this deployment into a fully-populated demo: a "Continue as Demo
   // Artist" sign-in (no real OAuth), and every integration below (Viberate,
   // Spotify search, DSP "connect" flows) swaps to a realistic mock instead of
-  // its no-op fallback. Never affects behavior when unset — same
-  // "optional, presence-checked" convention as every other flag above.
+  // its no-op fallback. This app is currently a demo-only deployment, so
+  // demo mode defaults ON — set DEMO_MODE=false explicitly to turn it off
+  // (e.g. once real Spotify/Viberate credentials are ready for production).
   DEMO_MODE: z.string().optional(),
 });
 
@@ -55,3 +56,6 @@ function loadEnv(): Env {
 }
 
 export const env = loadEnv();
+
+/** Demo mode defaults ON — see `DEMO_MODE`'s schema comment above. */
+export const isDemoMode = env.DEMO_MODE !== 'false';

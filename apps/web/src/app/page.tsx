@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { Link2, HeartHandshake, BarChart3, ArrowRight } from 'lucide-react';
+import { Link2, HeartHandshake, BarChart3, ArrowRight, Sparkles } from 'lucide-react';
 import { Badge, Button, Logo } from '@amplifyworld/ui';
-import { env } from '../env';
+import { isDemoMode } from '../env';
+import { startDemoPreview } from '../server/services/demo/start-demo-session';
 
 const features = [
   {
@@ -27,7 +28,7 @@ export default function HomePage() {
       <nav className="flex items-center justify-between py-8">
         <div className="flex items-center gap-3">
           <Logo height={22} />
-          {env.DEMO_MODE ? <Badge tone="brand">Demo Mode</Badge> : null}
+          {isDemoMode ? <Badge tone="brand">Demo Mode</Badge> : null}
         </div>
         <Link href="/dashboard">
           <Button variant="outline" size="sm">
@@ -62,11 +63,13 @@ export default function HomePage() {
               Get started
             </Button>
           </Link>
-          <Link href="/demo-artist">
-            <Button variant="outline" size="lg">
-              See an example
-            </Button>
-          </Link>
+          {isDemoMode ? (
+            <form action={startDemoPreview}>
+              <Button type="submit" variant="outline" size="lg" icon={<Sparkles className="size-4" />}>
+                See an example
+              </Button>
+            </form>
+          ) : null}
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import type { ArtistIntelligenceProvider } from '@amplifyworld/core';
-import { env } from '../../../env';
+import { isDemoMode } from '../../../env';
 import { noopArtistIntelligenceProvider } from './noop';
 import { demoArtistIntelligenceProvider } from './demo';
 
@@ -19,6 +19,6 @@ import { demoArtistIntelligenceProvider } from './demo';
  * `DEMO_MODE` takes priority over both — a demo deployment never has a real
  * key anyway, and the swap is explicit/intentional rather than incidental.
  */
-export const artistIntelligence: ArtistIntelligenceProvider = env.DEMO_MODE
+export const artistIntelligence: ArtistIntelligenceProvider = isDemoMode
   ? demoArtistIntelligenceProvider
   : noopArtistIntelligenceProvider;

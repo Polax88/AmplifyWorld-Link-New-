@@ -5,7 +5,7 @@ import { auth } from '../../server/auth';
 import { featureFlags } from '../../server/services/feature-flags';
 import { DashboardProvider } from '../../components/DashboardContext';
 import { NotificationBell } from '../../components/NotificationBell';
-import { env } from '../../env';
+import { isDemoMode } from '../../env';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link href="/dashboard" aria-label="AmplifyWorld Link home">
               <Logo height={20} />
             </Link>
-            {env.DEMO_MODE ? <Badge tone="brand">Demo Mode</Badge> : null}
+            {isDemoMode ? <Badge tone="brand">Demo Mode</Badge> : null}
           </div>
           <div className="flex items-center gap-4">
             {session.user.role === 'ADMIN' ? (
@@ -46,7 +46,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <DashboardProvider
           aiWizardEnabled={aiWizardEnabled}
           viberateEnabled={viberateEnabled}
-          demoModeEnabled={Boolean(env.DEMO_MODE)}
+          demoModeEnabled={isDemoMode}
         >
           {children}
         </DashboardProvider>
