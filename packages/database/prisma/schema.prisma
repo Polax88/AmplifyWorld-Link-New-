@@ -162,6 +162,7 @@ model Page {
   viberateSnapshots ViberateSnapshot[]
   momentumAlerts    MomentumAlert[]
   predictionMarket  PredictionMarket?
+  passes            Pass[]
 
   @@index([ownerId])
   @@index([genre, country])
@@ -197,6 +198,7 @@ model Fan {
 
   subscriptions   FanSubscription[]
   analyticsEvents AnalyticsEvent[]
+  passHolders     PassHolder[]
 
   @@map("fans")
 }
@@ -453,4 +455,44 @@ model PredictionPick {
   @@index([marketId])
   @@index([userId])
   @@map("prediction_picks")
+}
+
+// ---------------------------------------------------------------------------
+// Passes — demo-only, fanwallet-UX-inspired fan passes (branded card + QR +
+// a mocked "Add to Wallet"). Entirely local/fictional: no real dependency on
+// or import from fanwallet (a separate product/repo) — see IntegrationConnection's
+// `FANWALLET` provider value for how this app already keeps that boundary.
+// ---------------------------------------------------------------------------
+
+model Pass {
+  id          String    @id @default(cuid())
+  pageId      String
+  name        String
+  accentColor String    @default("#ff4081")
+  imageUrl    String?
+  eventName   String?
+  eventDate   DateTime?
+  eventVenue  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  page    Page         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  holders PassHolder[]
+
+  @@index([pageId])
+  @@map("passes")
+}
+
+model PassHolder {
+  id          String    @id @default(cuid())
+  passId      String
+  fanId       String
+  claimedAt   DateTime  @default(now())
+  checkedInAt DateTime?
+
+  pass Pass @relation(fields: [passId], references: [id], onDelete: Cascade)
+  fan  Fan  @relation(fields: [fanId], references: [id], onDelete: Cascade)
+
+  @@unique([passId, fanId])
+  @@map("pass_holders")
 }

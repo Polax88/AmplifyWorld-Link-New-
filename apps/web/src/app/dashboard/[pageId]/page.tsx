@@ -26,6 +26,7 @@ import { AmpsBalanceCard } from '../../../components/AmpsBalanceCard';
 import { ConnectedPlatformsCard } from '../../../components/ConnectedPlatformsCard';
 import { ConnectPlatformsCard } from '../../../components/ConnectPlatformsCard';
 import { FansCard } from '../../../components/FansCard';
+import { PassesCard } from '../../../components/PassesCard';
 import { useDashboardContext } from '../../../components/DashboardContext';
 import { SortableBlockCard } from './SortableBlockCard';
 
@@ -171,6 +172,8 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
         ) : null}
 
         <FansCard pageId={pageId} />
+
+        <PassesCard pageId={pageId} />
 
         <section className="flex flex-col gap-3">
           <div>

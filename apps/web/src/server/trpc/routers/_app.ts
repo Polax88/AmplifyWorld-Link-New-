@@ -11,6 +11,7 @@ import { fanRouter } from './fan';
 import { ampsRouter } from './amps';
 import { discoverRouter } from './discover';
 import { predictionsRouter } from './predictions';
+import { passRouter } from './pass';
 
 /**
  * Root router. Add a new domain (e.g. `integration`) by creating
@@ -31,6 +32,7 @@ export const appRouter = router({
   amps: ampsRouter,
   discover: discoverRouter,
   predictions: predictionsRouter,
+  pass: passRouter,
 });
 
 export type AppRouter = typeof appRouter;
