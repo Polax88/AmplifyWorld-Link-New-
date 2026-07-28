@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm --filter @amplifyworld/database migrate:deploy && pnpm build",
+  "buildCommand": "pnpm --filter @amplifyworld/database generate && pnpm --filter @amplifyworld/database migrate:deploy && pnpm build",
   "crons": [
     {
       "path": "/api/cron/momentum",
