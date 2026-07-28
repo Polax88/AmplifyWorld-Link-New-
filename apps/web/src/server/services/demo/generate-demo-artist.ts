@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { prisma, type Prisma } from '@amplifyworld/database';
 import {
   calculateMomentumScore,
@@ -227,14 +228,18 @@ function buildAnonymousEvent(pageId: string, date: Date, visitorPool: string[]):
 
 async function generateFans(pageId: string): Promise<void> {
   const fanCount = randInt(15, 40);
-  const fans = await Promise.all(
-    Array.from({ length: fanCount }, () => {
-      const first = pick(FAN_FIRST_NAMES);
-      const last = pick(FAN_LAST_NAMES);
-      const email = `${first.toLowerCase()}.${last.toLowerCase()}.${randomToken(6)}@example.com`;
-      return prisma.fan.create({ data: { email } });
-    }),
-  );
+  // IDs are generated here (rather than left to Fan's `@default(cuid())`)
+  // so all `fanCount` rows can go through a single `createMany` — many
+  // concurrent individual `create()` calls is the same pattern that made
+  // the AMI history generation slow (and, against a pooled/PgBouncer
+  // connection like production's, can outright fail on prepared-statement
+  // conflicts), which is why that was already batched the same way.
+  const fans = Array.from({ length: fanCount }, () => {
+    const first = pick(FAN_FIRST_NAMES);
+    const last = pick(FAN_LAST_NAMES);
+    return { id: randomUUID(), email: `${first.toLowerCase()}.${last.toLowerCase()}.${randomToken(6)}@example.com` };
+  });
+  await prisma.fan.createMany({ data: fans });
 
   const subscriptions: Prisma.FanSubscriptionCreateManyInput[] = [];
   const events: Prisma.AnalyticsEventCreateManyInput[] = [];
