@@ -4,8 +4,8 @@ import { use, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { IconButton, Button, Card, Modal } from '@amplifyworld/ui';
-import { trpc } from '../../../../lib/trpc/client';
-import { CreatePassForm } from '../../../../components/CreatePassForm';
+import { trpc } from '../../../../../lib/trpc/client';
+import { CreatePassForm } from '../../../../../components/CreatePassForm';
 
 export default function PassesPage({ params }: { params: Promise<{ pageId: string }> }) {
   const { pageId } = use(params);

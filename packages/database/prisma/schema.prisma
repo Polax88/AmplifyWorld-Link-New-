@@ -46,6 +46,7 @@ enum UserRole {
   ARTIST
   MANAGER
   ADMIN
+  FAN
 }
 
 model User {
@@ -161,7 +162,7 @@ model Page {
   momentumScores    PageMomentumScore[]
   viberateSnapshots ViberateSnapshot[]
   momentumAlerts    MomentumAlert[]
-  predictionMarket  PredictionMarket?
+  predictionMarkets PredictionMarket[]
   passes            Pass[]
 
   @@index([ownerId])
@@ -395,13 +396,14 @@ model WebhookSubscription {
 // ---------------------------------------------------------------------------
 
 enum AmpsTransactionType {
-  SIGNUP_BONUS
-  MOMENTUM_MILESTONE
-  FAN_ENGAGEMENT
+  SIGNUP_BONUS // now only a Fan's starting balance — artists no longer earn AMPS passively
+  MOMENTUM_MILESTONE // no longer awarded; kept so existing rows stay valid
+  FAN_ENGAGEMENT // no longer awarded; kept so existing rows stay valid
   PREDICTION_STAKE
   PREDICTION_PAYOUT
   LEADERBOARD_BOOST
   THEME_UNLOCK
+  MARKET_RAKE // an artist's cut of a fan's winning payout on their own page's market
 }
 
 model AmpsTransaction {
@@ -426,17 +428,28 @@ model AmpsTransaction {
 // future event to wait for) — never real money, never a real gambling product.
 // ---------------------------------------------------------------------------
 
-model PredictionMarket {
-  id        String   @id @default(cuid())
-  pageId    String   @unique // the fictional "up-and-coming" artist being predicted on
-  question  String
-  odds      Float // consensus probability, 0-1 — each pick resolves instantly against this
-  closesAt  DateTime // cosmetic — this demo has no shared future event to wait for
-  createdAt DateTime @default(now())
+enum PredictionSubjectType {
+  ARTIST
+  GENRE
+  COUNTRY
+}
 
-  page  Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+model PredictionMarket {
+  id          String                @id @default(cuid())
+  subjectType PredictionSubjectType @default(ARTIST)
+  pageId      String? // set when subjectType = ARTIST — the artist being predicted on
+  genre       String? // set when subjectType = GENRE
+  country     String? // set when subjectType = COUNTRY
+  question    String
+  odds        Float // consensus probability, 0-1 — each pick resolves instantly against this
+  closesAt    DateTime // cosmetic — this demo has no shared future event to wait for
+  createdAt   DateTime              @default(now())
+
+  page  Page?            @relation(fields: [pageId], references: [id], onDelete: Cascade)
   picks PredictionPick[]
 
+  @@index([pageId])
+  @@index([subjectType])
   @@map("prediction_markets")
 }
 

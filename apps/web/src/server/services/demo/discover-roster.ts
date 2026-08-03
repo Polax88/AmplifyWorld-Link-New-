@@ -4,7 +4,8 @@ import { COUNTRIES, GENRES, ROSTER_NAME_PREFIXES, ROSTER_NAME_SUFFIXES, pick, pi
 
 const ROSTER_SIZE = 60;
 const ROSTER_HISTORY_DAYS = 5;
-const ROSTER_OWNER_EMAIL = 'discover-roster@amplifyworld.ai';
+/** Exported so `discover.ts` can filter this synthetic owner out of the Link-exclusive leaderboard. */
+export const ROSTER_OWNER_EMAIL = 'discover-roster@amplifyworld.ai';
 const PREDICTION_MARKET_COUNT = 18;
 const PREDICTOR_COUNT = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -29,32 +30,39 @@ export async function ensureDiscoverRosterSeeded(): Promise<void> {
   });
 
   const existingCount = await prisma.page.count({ where: { ownerId: owner.id } });
-  if (existingCount >= ROSTER_SIZE) return;
+  if (existingCount < ROSTER_SIZE) {
+    const created: Array<{ pageId: string; score: number }> = [];
+    for (let i = existingCount; i < ROSTER_SIZE; i++) {
+      const name = `${pick(ROSTER_NAME_PREFIXES)} ${pick(ROSTER_NAME_SUFFIXES)}`;
+      const genre = pick(GENRES);
+      const country = pick(COUNTRIES);
+      const handle = `${slugify(name)}-${randomToken(5)}`;
 
-  const created: Array<{ pageId: string; score: number }> = [];
-  for (let i = existingCount; i < ROSTER_SIZE; i++) {
-    const name = `${pick(ROSTER_NAME_PREFIXES)} ${pick(ROSTER_NAME_SUFFIXES)}`;
-    const genre = pick(GENRES);
-    const country = pick(COUNTRIES);
-    const handle = `${slugify(name)}-${randomToken(5)}`;
+      const page = await prisma.page.create({
+        data: {
+          handle,
+          title: name,
+          bio: `${genre[0]?.toUpperCase()}${genre.slice(1)} artist.`,
+          status: 'PUBLISHED',
+          ownerId: owner.id,
+          genre,
+          country,
+        },
+      });
 
-    const page = await prisma.page.create({
-      data: {
-        handle,
-        title: name,
-        bio: `${genre[0]?.toUpperCase()}${genre.slice(1)} artist.`,
-        status: 'PUBLISHED',
-        ownerId: owner.id,
-        genre,
-        country,
-      },
-    });
+      const score = await generateLightMomentumHistory(page.id);
+      created.push({ pageId: page.id, score });
+    }
 
-    const score = await generateLightMomentumHistory(page.id);
-    created.push({ pageId: page.id, score });
+    await seedArtistMarkets(created);
   }
 
-  await seedPredictionMarketsAndPredictors(created);
+  // A separate, independent idempotency check from the page-topping-up
+  // above — this exact split is what lets genre/country markets get
+  // backfilled onto a deployment that already had its roster (and the
+  // original artist-only markets) fully seeded before these two subject
+  // types existed, without ever re-seeding or duplicating the artist ones.
+  await ensureGenreAndCountryMarketsSeeded();
 }
 
 async function generateLightMomentumHistory(pageId: string): Promise<number> {
@@ -106,13 +114,9 @@ async function generateLightMomentumHistory(pageId: string): Promise<number> {
   return previousScore;
 }
 
-/**
- * Picks a handful of mid-range "up-and-coming" roster pages and gives each
- * an open PredictionMarket, then seeds ~30 synthetic non-logging-in
- * "predictor" users with historical picks — so the Predictions leaderboard
- * has real spread from the start, not just whichever real viewer shows up.
- */
-async function seedPredictionMarketsAndPredictors(pages: Array<{ pageId: string; score: number }>): Promise<void> {
+/** Picks a handful of mid-range "up-and-coming" roster pages and gives each an open ARTIST-subject PredictionMarket. */
+async function seedArtistMarkets(pages: Array<{ pageId: string; score: number }>): Promise<void> {
+  if (pages.length === 0) return;
   const candidates = pages.filter((p) => p.score >= 35 && p.score <= 80);
   const chosen = pickN(candidates.length > 0 ? candidates : pages, Math.min(PREDICTION_MARKET_COUNT, pages.length));
 
@@ -120,6 +124,7 @@ async function seedPredictionMarketsAndPredictors(pages: Array<{ pageId: string;
     chosen.map((candidate) =>
       prisma.predictionMarket.create({
         data: {
+          subjectType: 'ARTIST',
           pageId: candidate.pageId,
           question: 'Will this artist break into the Top 100 this month?',
           odds: rand(0.15, 0.65),
@@ -129,6 +134,53 @@ async function seedPredictionMarketsAndPredictors(pages: Array<{ pageId: string;
     ),
   );
 
+  await seedPredictorPicks(markets);
+}
+
+/**
+ * One GENRE market per genre and one COUNTRY market per country — kept
+ * behind its own idempotency check (rather than folded into the page/
+ * artist-market seeding above) so it can backfill onto a deployment where
+ * the roster and artist markets were already fully seeded before these two
+ * subject types existed, without re-seeding or duplicating anything.
+ */
+async function ensureGenreAndCountryMarketsSeeded(): Promise<void> {
+  const existing = await prisma.predictionMarket.count({ where: { subjectType: { in: ['GENRE', 'COUNTRY'] } } });
+  if (existing > 0) return;
+
+  const genreMarkets = await Promise.all(
+    GENRES.map((genre) =>
+      prisma.predictionMarket.create({
+        data: {
+          subjectType: 'GENRE',
+          genre,
+          question: `Will ${genre} be the top-trending genre this week?`,
+          odds: rand(0.1, 0.45),
+          closesAt: new Date(Date.now() + randInt(3, 21) * DAY_MS),
+        },
+      }),
+    ),
+  );
+
+  const countryMarkets = await Promise.all(
+    COUNTRIES.map((country) =>
+      prisma.predictionMarket.create({
+        data: {
+          subjectType: 'COUNTRY',
+          country,
+          question: `Will ${country} produce the most breakout artists this month?`,
+          odds: rand(0.08, 0.4),
+          closesAt: new Date(Date.now() + randInt(3, 21) * DAY_MS),
+        },
+      }),
+    ),
+  );
+
+  await seedPredictorPicks([...genreMarkets, ...countryMarkets]);
+}
+
+/** Seeds ~30 synthetic non-logging-in "predictor" users with historical picks against the given markets, so the Predictions leaderboard has real spread from the start. */
+async function seedPredictorPicks(markets: Array<{ id: string; odds: number }>): Promise<void> {
   if (markets.length === 0) return;
 
   const predictors = await Promise.all(

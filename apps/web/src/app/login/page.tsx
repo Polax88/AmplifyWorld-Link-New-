@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { KeyRound, Sparkles } from 'lucide-react';
+import { KeyRound, Sparkles, Coins } from 'lucide-react';
 import { Button, Card, Logo } from '@amplifyworld/ui';
 import { signIn } from '../../server/auth';
-import { startDemoSession } from '../../server/services/demo/start-demo-session';
+import { startDemoSession, startDemoFanSession } from '../../server/services/demo/start-demo-session';
 import { env, isDemoMode } from '../../env';
 
 export default function LoginPage() {
@@ -28,6 +28,18 @@ export default function LoginPage() {
           <p className="text-xs text-white/40">
             Instantly get your own sandbox artist — a live AMI score, connected socials, smart links, and fan
             data — no real account needed.
+          </p>
+        </form>
+      ) : null}
+
+      {demoModeEnabled ? (
+        <form className="flex w-full flex-col gap-3" action={startDemoFanSession}>
+          <Button type="submit" variant="outline" size="lg" icon={<Coins className="size-4" />} className="w-full">
+            Continue as Demo Fan
+          </Button>
+          <p className="text-xs text-white/40">
+            Just here for Predictions? Get 1,000 $AMPS (fictional points, no real money) to bet on which artists,
+            genres, and countries will break out next.
           </p>
         </form>
       ) : null}

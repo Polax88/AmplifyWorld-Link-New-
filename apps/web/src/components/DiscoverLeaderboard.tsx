@@ -11,8 +11,8 @@ import { trpc } from '../lib/trpc/client';
  * duplication (e.g. `assertOwnership` copy-pasted per router). Adds
  * genre/country columns and a "Boosted" badge on top of the admin version.
  */
-export function DiscoverLeaderboard() {
-  const leaderboard = trpc.discover.leaderboard.useQuery();
+export function DiscoverLeaderboard({ scope }: { scope: 'link' | 'all' }) {
+  const leaderboard = trpc.discover.leaderboard.useQuery({ scope });
 
   if (leaderboard.isLoading) {
     return <Card className="h-64 animate-pulse" />;

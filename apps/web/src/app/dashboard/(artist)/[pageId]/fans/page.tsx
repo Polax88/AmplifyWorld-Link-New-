@@ -4,8 +4,8 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { IconButton, Button } from '@amplifyworld/ui';
-import { trpc } from '../../../../lib/trpc/client';
-import { FansTable } from '../../../../components/FansTable';
+import { trpc } from '../../../../../lib/trpc/client';
+import { FansTable } from '../../../../../components/FansTable';
 
 export default function FansPage({ params }: { params: Promise<{ pageId: string }> }) {
   const { pageId } = use(params);

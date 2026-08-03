@@ -27,6 +27,12 @@ export default async function DashboardIndexPage({
     redirect('/login');
   }
 
+  // Fans have no page at all — send them straight to their actual home
+  // instead of falling into the page-lookup/onboarding-wizard logic below.
+  if (session.user.role === 'FAN') {
+    redirect('/dashboard/predictions');
+  }
+
   const pages = await prisma.page.findMany({
     where: { ownerId: session.user.id },
     orderBy: { updatedAt: 'desc' },

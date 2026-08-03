@@ -4,8 +4,8 @@ import { use, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Users, CheckCircle2 } from 'lucide-react';
 import { IconButton, Card, Badge, Avatar, Button } from '@amplifyworld/ui';
-import { trpc } from '../../../../../lib/trpc/client';
-import { PassShareQrButton } from '../../../../../components/PassShareQrButton';
+import { trpc } from '../../../../../../lib/trpc/client';
+import { PassShareQrButton } from '../../../../../../components/PassShareQrButton';
 
 type Tab = 'overview' | 'checkin';
 

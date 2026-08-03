@@ -5,7 +5,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import { Card, IconButton, Badge } from '@amplifyworld/ui';
-import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
+import { blockTypeIcon } from '../../../../components/blocks/blockTypeIcon';
 
 export function SortableBlockCard({
   id,

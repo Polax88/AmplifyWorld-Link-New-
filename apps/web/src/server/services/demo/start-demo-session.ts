@@ -7,8 +7,11 @@ import { prisma } from '@amplifyworld/database';
 import { env, isDemoMode } from '../../../env';
 import { SESSION_COOKIE_NAME } from '../../auth';
 import { generateDemoArtist } from './generate-demo-artist';
+import { recordAmpsTransaction } from '../amps-ledger';
 
 const SESSION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+/** A Fan has no other way to acquire $AMPS (unlike artists, who earn a market rake) — see predictions.ts. */
+const FAN_STARTING_AMPS = 1000;
 
 /**
  * The demo sign-in entry point (login page's "Continue as Demo Artist"
@@ -37,6 +40,38 @@ export async function startDemoPreview(): Promise<void> {
   redirect(`/${handle}`);
 }
 
+/**
+ * The demo sign-in entry point for the Fan persona (login page's "Continue
+ * as Demo Fan" button) — a restricted experience with no page of their
+ * own: just Discover + Predictions (see `dashboard/(artist)/layout.tsx`
+ * for how artist-only routes are gated away from this role). Fans have no
+ * other way to earn $AMPS (artists at least get a market rake — see
+ * `predictions.ts`), so they start with a flat balance to bet with.
+ */
+export async function startDemoFanSession(): Promise<void> {
+  if (!isDemoMode) {
+    throw new Error('Demo mode is not enabled.');
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      email: `fan+${randomBytes(8).toString('hex')}@amplifyworld.ai`,
+      name: 'Demo Fan',
+      role: 'FAN',
+    },
+  });
+
+  await recordAmpsTransaction(prisma, {
+    userId: user.id,
+    type: 'SIGNUP_BONUS',
+    amount: FAN_STARTING_AMPS,
+    description: 'Welcome bonus to start predicting',
+  });
+
+  await createSessionCookie(user.id);
+  redirect('/dashboard/predictions');
+}
+
 async function createDemoArtistSession(): Promise<{ handle: string }> {
   if (!isDemoMode) {
     throw new Error('Demo mode is not enabled.');
@@ -53,10 +88,15 @@ async function createDemoArtistSession(): Promise<{ handle: string }> {
   });
 
   const { handle } = await generateDemoArtist(user.id);
+  await createSessionCookie(user.id);
 
+  return { handle };
+}
+
+async function createSessionCookie(userId: string): Promise<void> {
   const sessionToken = randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + SESSION_LIFETIME_MS);
-  await prisma.session.create({ data: { sessionToken, userId: user.id, expires } });
+  await prisma.session.create({ data: { sessionToken, userId, expires } });
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
@@ -66,8 +106,6 @@ async function createDemoArtistSession(): Promise<{ handle: string }> {
     secure: env.NODE_ENV === 'production',
     expires,
   });
-
-  return { handle };
 }
 
 /**

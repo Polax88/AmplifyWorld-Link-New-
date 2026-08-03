@@ -16,7 +16,7 @@ export function PredictionHistory() {
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-white/40">
-            <th className="px-4 py-3 font-medium">Artist</th>
+            <th className="px-4 py-3 font-medium">Prediction</th>
             <th className="px-4 py-3 font-medium">Stake</th>
             <th className="px-4 py-3 font-medium">Result</th>
           </tr>
@@ -25,8 +25,8 @@ export function PredictionHistory() {
           {history.data.map((pick) => (
             <tr key={pick.id} className="border-b border-white/5 last:border-none">
               <td className="px-4 py-3">
-                <span className="font-medium">{pick.artist}</span>
-                <span className="ml-2 text-xs text-white/40">amplify.world/{pick.handle}</span>
+                <span className="font-medium">{pick.subject}</span>
+                {pick.handle ? <span className="ml-2 text-xs text-white/40">amplify.world/{pick.handle}</span> : null}
               </td>
               <td className="px-4 py-3 tabular-nums text-white/60">{pick.stakeAmount}</td>
               <td className="px-4 py-3">

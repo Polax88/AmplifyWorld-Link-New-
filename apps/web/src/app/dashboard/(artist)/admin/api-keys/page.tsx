@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { auth } from '../../../../server/auth';
-import { ApiKeyManager } from '../../../../components/ApiKeyManager';
+import { auth } from '../../../../../server/auth';
+import { ApiKeyManager } from '../../../../../components/ApiKeyManager';
 
 /**
  * Admin-only management of read-only external Artist Momentum Index API

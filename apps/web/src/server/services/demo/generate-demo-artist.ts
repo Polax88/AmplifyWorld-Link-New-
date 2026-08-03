@@ -23,22 +23,24 @@ import {
   slugify,
 } from './fixtures';
 import { buildFakeArtistSnapshot } from './fake-snapshot';
-import { recordAmpsTransaction } from '../amps-ledger';
 
 const HISTORY_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const SIGNUP_BONUS_AMPS = 500;
-const FAN_ENGAGEMENT_AMPS_PER_FAN = 5;
-const MOMENTUM_MILESTONES = [50, 70, 90];
-const MOMENTUM_MILESTONE_AMPS = 100;
+const MARKET_CLOSES_IN_DAYS = [3, 21] as const;
 
 /**
  * Builds one brand-new, fully-populated demo artist: a published page with
  * smart links, a simulated Viberate connection, 30 days of realistic AMI
  * history (computed with the real scoring engine, not hand-picked numbers),
- * and a set of synthetic fans with interaction history. Called once per demo
- * sign-in (see `start-demo-session.ts`) so every viewer gets their own
- * pristine sandbox — nothing here is shared/mutated across demo sessions.
+ * a set of synthetic fans with interaction history, and one prediction
+ * market on the artist's own page. Called once per demo sign-in (see
+ * `start-demo-session.ts`) so every viewer gets their own pristine sandbox
+ * — nothing here is shared/mutated across demo sessions.
+ *
+ * Artists don't earn $AMPS just for signing in or growing anymore — the
+ * only way they earn is a rake off a fan's winning prediction on this
+ * market (see `predictions.ts`'s `placePick`), so there's no bonus
+ * awarded here at all; a fresh artist starts at 0 AMPS.
  */
 export async function generateDemoArtist(userId: string): Promise<{ pageId: string; handle: string }> {
   const name = pick(ARTIST_NAMES);
@@ -63,18 +65,30 @@ export async function generateDemoArtist(userId: string): Promise<{ pageId: stri
 
   await createSmartLinkBlocks(page.id, name);
   const finalScore = await generateAmiAndViberateHistory(page.id, name, genre, freshVisitorPool());
-  const fanCount = await generateFans(page.id);
-
-  await recordAmpsTransaction(prisma, {
-    userId,
-    type: 'SIGNUP_BONUS',
-    amount: SIGNUP_BONUS_AMPS,
-    description: 'Welcome bonus for a new artist page',
-  });
-  await awardMomentumMilestones(userId, finalScore);
-  await awardFanEngagement(userId, fanCount);
+  await generateFans(page.id);
+  await createOwnPredictionMarket(page.id, name, finalScore);
 
   return { pageId: page.id, handle };
+}
+
+/**
+ * Every real artist gets a bettable market on their own page — otherwise a
+ * Fan would have nothing tied to a real (non-fictional) artist to predict
+ * on, and the artist would have no path to earn a rake at all. Odds lean
+ * on the artist's own seeded AMI score (higher momentum → better consensus
+ * odds of breaking out) rather than being pulled from thin air.
+ */
+async function createOwnPredictionMarket(pageId: string, name: string, finalScore: number): Promise<void> {
+  const odds = Math.min(0.75, Math.max(0.15, finalScore / 100 + rand(-0.1, 0.1)));
+  await prisma.predictionMarket.create({
+    data: {
+      subjectType: 'ARTIST',
+      pageId,
+      question: `Will ${name} break into the Top 100 this month?`,
+      odds,
+      closesAt: new Date(Date.now() + randInt(...MARKET_CLOSES_IN_DAYS) * DAY_MS),
+    },
+  });
 }
 
 /**
@@ -107,40 +121,8 @@ export async function regenerateDemoData(pageId: string): Promise<void> {
     await prisma.fan.deleteMany({ where: { id: { in: staleFans.map((fan) => fan.id) } } });
   }
 
-  const finalScore = await generateAmiAndViberateHistory(pageId, page.title, genre, freshVisitorPool());
-  const fanCount = await generateFans(pageId);
-
-  // Re-awards fan-engagement/milestone AMPS for the freshly-regenerated
-  // history each time — same "fresh sample" spirit as the history/fan data
-  // itself being fully replaced, not accumulated. This fictional points
-  // ledger has no real value, so repeated "Regenerate demo data" clicks
-  // topping up the balance again is an accepted simplification rather than
-  // something worth tracking idempotency for.
-  await awardMomentumMilestones(page.ownerId, finalScore);
-  await awardFanEngagement(page.ownerId, fanCount);
-}
-
-async function awardMomentumMilestones(userId: string, finalScore: number): Promise<void> {
-  for (const milestone of MOMENTUM_MILESTONES) {
-    if (finalScore >= milestone) {
-      await recordAmpsTransaction(prisma, {
-        userId,
-        type: 'MOMENTUM_MILESTONE',
-        amount: MOMENTUM_MILESTONE_AMPS,
-        description: `Reached a ${milestone} AMI score`,
-      });
-    }
-  }
-}
-
-async function awardFanEngagement(userId: string, fanCount: number): Promise<void> {
-  if (fanCount <= 0) return;
-  await recordAmpsTransaction(prisma, {
-    userId,
-    type: 'FAN_ENGAGEMENT',
-    amount: fanCount * FAN_ENGAGEMENT_AMPS_PER_FAN,
-    description: `${fanCount} fans engaged with your page`,
-  });
+  await generateAmiAndViberateHistory(pageId, page.title, genre, freshVisitorPool());
+  await generateFans(pageId);
 }
 
 function freshVisitorPool(): string[] {

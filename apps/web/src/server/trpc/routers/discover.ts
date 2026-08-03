@@ -1,6 +1,7 @@
+import { z } from 'zod';
 import { router, protectedProcedure } from '../trpc';
 import { getLeaderboard } from '../../services/momentum-queries';
-import { ensureDiscoverRosterSeeded } from '../../services/demo/discover-roster';
+import { ensureDiscoverRosterSeeded, ROSTER_OWNER_EMAIL } from '../../services/demo/discover-roster';
 
 export const discoverRouter = router({
   /**
@@ -10,31 +11,47 @@ export const discoverRouter = router({
    * Discover's table. Lazily seeds the fictional artist roster on first
    * call so there's always a real spread to browse, not just the viewer's
    * own page.
+   *
+   * `scope: 'link'` filters out the synthetic Discover-roster owner's pages
+   * — an exclusive leaderboard of real Link artists only — and re-ranks
+   * the filtered set from 1 (showing the original global rank in an
+   * "exclusive" view would read as broken, e.g. "Rank 47"). `scope: 'all'`
+   * is the original combined view (Link + the roster standing in for
+   * "3rd-party"/industry-wide data).
    */
-  leaderboard: protectedProcedure.query(async ({ ctx }) => {
-    await ensureDiscoverRosterSeeded();
-    const board = await getLeaderboard();
+  leaderboard: protectedProcedure
+    .input(z.object({ scope: z.enum(['link', 'all']).default('all') }))
+    .query(async ({ ctx, input }) => {
+      await ensureDiscoverRosterSeeded();
+      const board = await getLeaderboard();
 
-    const pages = await ctx.prisma.page.findMany({
-      where: { id: { in: board.entries.map((entry) => entry.pageId) } },
-      select: { id: true, genre: true, country: true, discoverBoostedUntil: true },
-    });
-    const pageById = new Map(pages.map((page) => [page.id, page]));
-    const now = new Date();
+      const pages = await ctx.prisma.page.findMany({
+        where: { id: { in: board.entries.map((entry) => entry.pageId) } },
+        select: { id: true, ownerId: true, genre: true, country: true, discoverBoostedUntil: true },
+      });
+      const pageById = new Map(pages.map((page) => [page.id, page]));
+      const now = new Date();
 
-    return {
-      ...board,
-      entries: board.entries.map((entry) => {
+      let entries = board.entries.map((entry) => {
         const page = pageById.get(entry.pageId);
         return {
           ...entry,
+          ownerId: page?.ownerId ?? null,
           genre: page?.genre ?? null,
           country: page?.country ?? null,
           isBoosted: Boolean(page?.discoverBoostedUntil && page.discoverBoostedUntil > now),
         };
-      }),
-    };
-  }),
+      });
+
+      if (input.scope === 'link') {
+        const rosterOwner = await ctx.prisma.user.findUnique({ where: { email: ROSTER_OWNER_EMAIL } });
+        entries = entries
+          .filter((entry) => entry.ownerId !== rosterOwner?.id)
+          .map((entry, index) => ({ ...entry, rank: index + 1 }));
+      }
+
+      return { ...board, entries };
+    }),
 
   /** Which genres are trending in which markets today, from the same momentum data as the leaderboard. */
   genreTrends: protectedProcedure.query(async ({ ctx }) => {

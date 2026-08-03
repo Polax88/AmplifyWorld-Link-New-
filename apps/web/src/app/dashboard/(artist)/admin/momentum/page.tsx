@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { auth } from '../../../../server/auth';
-import { MomentumLeaderboard } from '../../../../components/MomentumLeaderboard';
+import { auth } from '../../../../../server/auth';
+import { MomentumLeaderboard } from '../../../../../components/MomentumLeaderboard';
 
 /**
  * "Top 100 Rising Artists" — the Artist Momentum Index leaderboard. Admin-only

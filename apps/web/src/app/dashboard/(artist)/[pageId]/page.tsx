@@ -15,19 +15,19 @@ import { ArrowLeft, RefreshCw, Smartphone, Eye, MousePointerClick, Settings } fr
 import type { SocialBlockConfig } from '@amplifyworld/core';
 import { pageThemeSchema } from '@amplifyworld/core';
 import { Button, Card, IconButton, Modal } from '@amplifyworld/ui';
-import { trpc } from '../../../lib/trpc/client';
-import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
-import { BlockConfigForm } from '../../../components/blocks/BlockConfigForm';
-import { PagePreview } from '../../../components/PagePreview';
-import { PageSettingsForm } from '../../../components/PageSettingsForm';
-import { ShareQrButton } from '../../../components/ShareQrButton';
-import { MomentumPanel } from '../../../components/MomentumPanel';
-import { AmpsBalanceCard } from '../../../components/AmpsBalanceCard';
-import { ConnectedPlatformsCard } from '../../../components/ConnectedPlatformsCard';
-import { ConnectPlatformsCard } from '../../../components/ConnectPlatformsCard';
-import { FansCard } from '../../../components/FansCard';
-import { PassesCard } from '../../../components/PassesCard';
-import { useDashboardContext } from '../../../components/DashboardContext';
+import { trpc } from '../../../../lib/trpc/client';
+import { blockTypeIcon } from '../../../../components/blocks/blockTypeIcon';
+import { BlockConfigForm } from '../../../../components/blocks/BlockConfigForm';
+import { PagePreview } from '../../../../components/PagePreview';
+import { PageSettingsForm } from '../../../../components/PageSettingsForm';
+import { ShareQrButton } from '../../../../components/ShareQrButton';
+import { MomentumPanel } from '../../../../components/MomentumPanel';
+import { AmpsBalanceCard } from '../../../../components/AmpsBalanceCard';
+import { ConnectedPlatformsCard } from '../../../../components/ConnectedPlatformsCard';
+import { ConnectPlatformsCard } from '../../../../components/ConnectPlatformsCard';
+import { FansCard } from '../../../../components/FansCard';
+import { PassesCard } from '../../../../components/PassesCard';
+import { useDashboardContext } from '../../../../components/DashboardContext';
 import { SortableBlockCard } from './SortableBlockCard';
 
 export default function PageEditor({ params }: { params: Promise<{ pageId: string }> }) {

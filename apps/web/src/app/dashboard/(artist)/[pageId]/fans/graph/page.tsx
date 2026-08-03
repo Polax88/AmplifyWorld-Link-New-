@@ -4,9 +4,9 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { IconButton, Card, Button } from '@amplifyworld/ui';
-import { trpc } from '../../../../../lib/trpc/client';
-import { FanGrowthChart } from '../../../../../components/FanGrowthChart';
-import { RankedBarList } from '../../../../../components/RankedBarList';
+import { trpc } from '../../../../../../lib/trpc/client';
+import { FanGrowthChart } from '../../../../../../components/FanGrowthChart';
+import { RankedBarList } from '../../../../../../components/RankedBarList';
 
 export default function FanGraphPage({ params }: { params: Promise<{ pageId: string }> }) {
   const { pageId } = use(params);

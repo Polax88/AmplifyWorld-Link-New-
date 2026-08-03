@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Smartphone, Activity, X } from 'lucide-react';
 import { Button, Card, Textarea, Modal, Avatar } from '@amplifyworld/ui';
-import { trpc } from '../../../lib/trpc/client';
-import { blockTypeIcon } from '../../../components/blocks/blockTypeIcon';
-import { PagePreview } from '../../../components/PagePreview';
+import { trpc } from '../../../../lib/trpc/client';
+import { blockTypeIcon } from '../../../../components/blocks/blockTypeIcon';
+import { PagePreview } from '../../../../components/PagePreview';
 import type { WizardState } from './types';
 
 export function ReviewStep({

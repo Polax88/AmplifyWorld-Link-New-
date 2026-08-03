@@ -43,7 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 </Link>
               </>
             ) : null}
-            <NotificationBell />
+            {session.user.role !== 'FAN' ? <NotificationBell /> : null}
             <Avatar name={session.user.name ?? session.user.email ?? 'You'} size="sm" />
           </div>
         </div>

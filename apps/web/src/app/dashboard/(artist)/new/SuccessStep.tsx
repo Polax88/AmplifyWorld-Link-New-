@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Check, Copy, PartyPopper } from 'lucide-react';
 import { Button, Card, QrCode } from '@amplifyworld/ui';
-import { trpc } from '../../../lib/trpc/client';
+import { trpc } from '../../../../lib/trpc/client';
 
 export function SuccessStep({ pageId, handle }: { pageId: string; handle: string }) {
   const [copied, setCopied] = useState(false);

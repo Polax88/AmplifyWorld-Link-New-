@@ -1,5 +1,6 @@
 import { PredictionMarketsList } from '../../../components/PredictionMarketsList';
 import { PredictionHistory, PredictorLeaderboard } from '../../../components/PredictionHistoryAndLeaderboard';
+import { FanBalanceHeader } from '../../../components/FanBalanceHeader';
 
 export default function PredictionsPage() {
   return (
@@ -7,10 +8,12 @@ export default function PredictionsPage() {
       <div>
         <h1 className="text-lg font-semibold leading-tight">Predictions</h1>
         <p className="mt-0.5 text-sm text-white/50">
-          Back the artists you think will break out next, using $AMPS. Fictional points only — demo predictions
-          resolve instantly against each market&apos;s odds, never real money.
+          Back the artists, genres, and countries you think will break out next, using $AMPS. Fictional points
+          only — demo predictions resolve instantly against each market&apos;s odds, never real money.
         </p>
       </div>
+
+      <FanBalanceHeader />
 
       <PredictionMarketsList />
 
