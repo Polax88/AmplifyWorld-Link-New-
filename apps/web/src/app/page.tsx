@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Link2, HeartHandshake, BarChart3, ArrowRight, Sparkles } from 'lucide-react';
-import { Badge, Button, Logo } from '@amplifyworld/ui';
+import { Badge, Button, Card, Logo } from '@amplifyworld/ui';
 import { isDemoMode } from '../env';
 import { startDemoPreview } from '../server/services/demo/start-demo-session';
 
@@ -13,7 +13,7 @@ const features = [
   {
     icon: HeartHandshake,
     title: 'Direct fan support',
-    description: 'Tips, gated drops, and exclusive content, built for direct fan relationships.',
+    description: 'Gated drops and exclusive content, built for direct fan relationships.',
   },
   {
     icon: BarChart3,
@@ -53,8 +53,15 @@ export default function HomePage() {
           className="max-w-lg animate-fade-up text-balance text-white/60"
           style={{ animationDelay: '150ms' }}
         >
-          A page you own, that grows with you — links, media, tips, and gated content,
+          A page you own, that grows with you — links, media, and gated content,
           without giving up your direct relationship with fans.
+        </p>
+
+        <p
+          className="animate-fade-up text-xs font-medium uppercase tracking-wide text-white/35"
+          style={{ animationDelay: '190ms' }}
+        >
+          Built for independent artists — no label, no middleman
         </p>
 
         <div className="flex animate-fade-up items-center gap-3" style={{ animationDelay: '220ms' }}>
@@ -75,16 +82,13 @@ export default function HomePage() {
 
       <div className="grid animate-fade-up gap-4 pb-24 sm:grid-cols-3" style={{ animationDelay: '280ms' }}>
         {features.map((feature) => (
-          <div
-            key={feature.title}
-            className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-left"
-          >
+          <Card key={feature.title} className="p-6 text-left">
             <span className="mb-3 flex size-9 items-center justify-center rounded-full bg-brand-500/15 text-brand-400">
               <feature.icon className="size-4" />
             </span>
             <h3 className="text-sm font-semibold text-white">{feature.title}</h3>
             <p className="mt-1.5 text-sm leading-relaxed text-white/55">{feature.description}</p>
-          </div>
+          </Card>
         ))}
       </div>
     </main>

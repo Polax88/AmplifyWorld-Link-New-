@@ -37,10 +37,11 @@ const MARKET_CLOSES_IN_DAYS = [3, 21] as const;
  * `start-demo-session.ts`) so every viewer gets their own pristine sandbox
  * — nothing here is shared/mutated across demo sessions.
  *
- * Artists don't earn $AMPS just for signing in or growing anymore — the
- * only way they earn is a rake off a fan's winning prediction on this
- * market (see `predictions.ts`'s `placePick`), so there's no bonus
- * awarded here at all; a fresh artist starts at 0 AMPS.
+ * Artists don't earn $AMPS just for signing in or growing anymore — like
+ * Fans, the only way they earn is by placing their own predictions and
+ * winning (see `predictions.ts`'s `placePick`). Their starting balance is
+ * awarded in `start-demo-session.ts` right before this runs, so there's
+ * something to stake on the market this function creates below.
  */
 export async function generateDemoArtist(userId: string): Promise<{ pageId: string; handle: string }> {
   const name = pick(ARTIST_NAMES);
@@ -74,9 +75,9 @@ export async function generateDemoArtist(userId: string): Promise<{ pageId: stri
 /**
  * Every real artist gets a bettable market on their own page — otherwise a
  * Fan would have nothing tied to a real (non-fictional) artist to predict
- * on, and the artist would have no path to earn a rake at all. Odds lean
- * on the artist's own seeded AMI score (higher momentum → better consensus
- * odds of breaking out) rather than being pulled from thin air.
+ * on. Odds lean on the artist's own seeded AMI score (higher momentum →
+ * better consensus odds of breaking out) rather than being pulled from
+ * thin air.
  */
 async function createOwnPredictionMarket(pageId: string, name: string, finalScore: number): Promise<void> {
   const odds = Math.min(0.75, Math.max(0.15, finalScore / 100 + rand(-0.1, 0.1)));

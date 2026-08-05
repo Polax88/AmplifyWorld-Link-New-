@@ -16,8 +16,8 @@ export default function LoginPage() {
         <KeyRound className="size-5" />
       </span>
       <div>
-        <h1 className="text-xl font-semibold">Sign in</h1>
-        <p className="mt-1 text-sm text-white/60">Sign in to manage your AmplifyWorld Link pages.</p>
+        <h1 className="text-xl font-semibold">Welcome back</h1>
+        <p className="mt-1 text-sm text-white/60">Sign in to manage your AmplifyWorld Link page — no label required.</p>
       </div>
 
       {demoModeEnabled ? (
@@ -68,6 +68,7 @@ export default function LoginPage() {
       <Link href="/" className="text-xs text-white/40 hover:text-white/70">
         Back home
       </Link>
+      <p className="text-[11px] uppercase tracking-wide text-white/25">Own your page. Own your fans.</p>
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { Avatar, Badge, Logo } from '@amplifyworld/ui';
 import { auth } from '../../server/auth';
 import { featureFlags } from '../../server/services/feature-flags';
 import { DashboardProvider } from '../../components/DashboardContext';
+import { DashboardNav } from '../../components/DashboardNav';
 import { NotificationBell } from '../../components/NotificationBell';
 import { isDemoMode } from '../../env';
 
@@ -27,22 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {isDemoMode ? <Badge tone="brand">Demo Mode</Badge> : null}
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/discover" className="text-sm text-white/60 hover:text-white">
-              Discover
-            </Link>
-            <Link href="/dashboard/predictions" className="text-sm text-white/60 hover:text-white">
-              Predictions
-            </Link>
-            {session.user.role === 'ADMIN' ? (
-              <>
-                <Link href="/dashboard/admin/momentum" className="text-sm text-white/60 hover:text-white">
-                  Rising Artists
-                </Link>
-                <Link href="/dashboard/admin/api-keys" className="text-sm text-white/60 hover:text-white">
-                  API Keys
-                </Link>
-              </>
-            ) : null}
+            <DashboardNav role={session.user.role} />
             {session.user.role !== 'FAN' ? <NotificationBell /> : null}
             <Avatar name={session.user.name ?? session.user.email ?? 'You'} size="sm" />
           </div>

@@ -22,6 +22,7 @@ import { PagePreview } from '../../../../components/PagePreview';
 import { PageSettingsForm } from '../../../../components/PageSettingsForm';
 import { ShareQrButton } from '../../../../components/ShareQrButton';
 import { MomentumPanel } from '../../../../components/MomentumPanel';
+import { HubWelcomeBanner } from '../../../../components/HubWelcomeBanner';
 import { AmpsBalanceCard } from '../../../../components/AmpsBalanceCard';
 import { ConnectedPlatformsCard } from '../../../../components/ConnectedPlatformsCard';
 import { ConnectPlatformsCard } from '../../../../components/ConnectPlatformsCard';
@@ -146,6 +147,8 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
             </span>
           </div>
         ) : null}
+
+        <HubWelcomeBanner pageId={pageId} />
 
         <MomentumPanel
           pageId={pageId}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Coins, Rocket } from 'lucide-react';
 import { Card, Button, Badge } from '@amplifyworld/ui';
 import { trpc } from '../lib/trpc/client';
@@ -43,6 +44,9 @@ export function AmpsBalanceCard({ pageId }: { pageId: string }) {
       <span className="text-3xl font-semibold tabular-nums">{amount.toLocaleString()}</span>
       {boost.error ? <p className="text-xs text-red-300">{boost.error.message}</p> : null}
       {boost.data ? <Badge tone="success">Boosted for 7 days</Badge> : null}
+      <Link href="/dashboard/upgrade" className="text-xs text-white/40 underline hover:text-white/70">
+        See all Pro perks
+      </Link>
 
       {transactions.length > 0 ? (
         <div className="mt-1 flex flex-col gap-1.5 border-t border-white/8 pt-3">

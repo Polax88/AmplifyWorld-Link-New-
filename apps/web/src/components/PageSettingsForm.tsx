@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Sparkles, Lock, Check } from 'lucide-react';
 import { THEME_PRESETS } from '@amplifyworld/core';
 import { Button, Input, Textarea, Card, cn } from '@amplifyworld/ui';
@@ -98,26 +99,46 @@ export function PageSettingsForm({
           {THEME_PRESETS.map((preset) => {
             const locked = preset.isPremium && !unlockedThemes.includes(preset.key);
             const selected = themeKey === preset.key;
+            const swatchClassName = cn(
+              'relative flex aspect-square items-center justify-center rounded-xl border transition-all',
+              selected ? 'border-white/60 ring-2 ring-white/30' : 'border-white/10 hover:border-white/30',
+            );
+
+            if (locked) {
+              return (
+                <Link
+                  key={preset.key}
+                  href="/dashboard/upgrade"
+                  title={`Unlock for ${preset.ampsCost} AMPS`}
+                  className={swatchClassName}
+                  style={{ backgroundColor: preset.accentColor }}
+                >
+                  <Lock className="size-3.5 text-white drop-shadow" />
+                </Link>
+              );
+            }
+
             return (
               <button
                 key={preset.key}
                 type="button"
-                disabled={locked}
                 onClick={() => setThemeKey(preset.key)}
-                title={locked ? `Unlock for ${preset.ampsCost} AMPS` : preset.displayName}
-                className={cn(
-                  'relative flex aspect-square items-center justify-center rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-40',
-                  selected ? 'border-white/60 ring-2 ring-white/30' : 'border-white/10 hover:border-white/30',
-                )}
+                title={preset.displayName}
+                className={swatchClassName}
                 style={{ backgroundColor: preset.accentColor }}
               >
-                {locked ? <Lock className="size-3.5 text-white drop-shadow" /> : null}
                 {selected ? <Check className="size-3.5 text-white drop-shadow" /> : null}
               </button>
             );
           })}
         </div>
-        <p className="text-xs text-white/35">Locked themes unlock by spending $AMPS — see your balance below.</p>
+        <p className="text-xs text-white/35">
+          Locked themes unlock by spending $AMPS —{' '}
+          <Link href="/dashboard/upgrade" className="text-white/50 underline hover:text-white">
+            see all Pro perks
+          </Link>
+          .
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">

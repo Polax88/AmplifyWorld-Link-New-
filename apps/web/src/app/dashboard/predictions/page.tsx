@@ -1,6 +1,6 @@
 import { PredictionMarketsList } from '../../../components/PredictionMarketsList';
 import { PredictionHistory, PredictorLeaderboard } from '../../../components/PredictionHistoryAndLeaderboard';
-import { FanBalanceHeader } from '../../../components/FanBalanceHeader';
+import { PredictorBalanceHeader } from '../../../components/PredictorBalanceHeader';
 
 export default function PredictionsPage() {
   return (
@@ -13,7 +13,7 @@ export default function PredictionsPage() {
         </p>
       </div>
 
-      <FanBalanceHeader />
+      <PredictorBalanceHeader />
 
       <PredictionMarketsList />
 

@@ -10,8 +10,10 @@ import { generateDemoArtist } from './generate-demo-artist';
 import { recordAmpsTransaction } from '../amps-ledger';
 
 const SESSION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
-/** A Fan has no other way to acquire $AMPS (unlike artists, who earn a market rake) — see predictions.ts. */
+/** Fans only ever earn $AMPS by predicting, so they start with plenty to work with. */
 const FAN_STARTING_AMPS = 1000;
+/** Artists earn $AMPS the same way Fans do — placing their own predictions — so they need a small stake to start with too. */
+const ARTIST_STARTING_AMPS = 300;
 
 /**
  * The demo sign-in entry point (login page's "Continue as Demo Artist"
@@ -44,9 +46,9 @@ export async function startDemoPreview(): Promise<void> {
  * The demo sign-in entry point for the Fan persona (login page's "Continue
  * as Demo Fan" button) — a restricted experience with no page of their
  * own: just Discover + Predictions (see `dashboard/(artist)/layout.tsx`
- * for how artist-only routes are gated away from this role). Fans have no
- * other way to earn $AMPS (artists at least get a market rake — see
- * `predictions.ts`), so they start with a flat balance to bet with.
+ * for how artist-only routes are gated away from this role). Fans only earn
+ * $AMPS by predicting (see `predictions.ts`), so they start with a flat
+ * balance to bet with.
  */
 export async function startDemoFanSession(): Promise<void> {
   if (!isDemoMode) {
@@ -85,6 +87,13 @@ async function createDemoArtistSession(): Promise<{ handle: string }> {
       name: 'Demo Artist',
       role: 'ARTIST',
     },
+  });
+
+  await recordAmpsTransaction(prisma, {
+    userId: user.id,
+    type: 'SIGNUP_BONUS',
+    amount: ARTIST_STARTING_AMPS,
+    description: 'Welcome bonus to start predicting',
   });
 
   const { handle } = await generateDemoArtist(user.id);

@@ -4,8 +4,8 @@ import { Coins } from 'lucide-react';
 import { Card } from '@amplifyworld/ui';
 import { trpc } from '../lib/trpc/client';
 
-/** Compact $AMPS balance readout for the Predictions page — the Fan persona's home, with no page of their own to show a full AmpsBalanceCard against. */
-export function FanBalanceHeader() {
+/** Compact $AMPS balance readout for the Predictions page — shown to both personas, since both earn and spend AMPS by predicting here. */
+export function PredictorBalanceHeader() {
   const balance = trpc.amps.myBalance.useQuery();
 
   if (balance.isLoading) {
