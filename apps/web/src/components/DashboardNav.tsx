@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Badge, cn } from '@amplifyworld/ui';
 import type { UserRole } from '@amplifyworld/database';
 import { trpc } from '../lib/trpc/client';
+import { startDemoSession, startDemoFanSession } from '../server/services/demo/start-demo-session';
 
 interface NavLink {
   href: string;
@@ -12,12 +13,13 @@ interface NavLink {
 }
 
 /**
- * The dashboard header's nav links + persona/plan badges. A client component
- * (needs `usePathname` for active-link state) so the Fan/Artist split — real
- * server-side gating in `dashboard/(artist)/layout.tsx` — is also visible,
- * not just enforced silently.
+ * The dashboard header's nav links + persona/plan badges, plus (in demo mode)
+ * a one-click Artist/Fan switcher. A client component (needs `usePathname`
+ * for active-link state) so the Fan/Artist split — real server-side gating in
+ * `dashboard/(artist)/layout.tsx` — is also visible, not just enforced
+ * silently.
  */
-export function DashboardNav({ role }: { role: UserRole }) {
+export function DashboardNav({ role, demoModeEnabled }: { role: UserRole; demoModeEnabled: boolean }) {
   const pathname = usePathname();
   const balance = trpc.amps.myBalance.useQuery(undefined, { enabled: role !== 'FAN' });
 
@@ -55,7 +57,42 @@ export function DashboardNav({ role }: { role: UserRole }) {
           </Badge>
         </Link>
       ) : null}
-      <Badge tone="neutral">{role === 'FAN' ? 'Fan' : 'Artist'}</Badge>
+      {demoModeEnabled && (role === 'ARTIST' || role === 'FAN') ? (
+        <div
+          className="flex items-center gap-0.5 rounded-full border border-white/10 bg-white/5 p-0.5"
+          role="group"
+          aria-label="Switch demo view"
+        >
+          <form action={startDemoSession}>
+            <button
+              type="submit"
+              disabled={role === 'ARTIST'}
+              title={role === 'ARTIST' ? 'Viewing as Artist' : 'Switch to Artist view'}
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors',
+                role === 'ARTIST' ? 'bg-brand-500/20 text-brand-400' : 'text-white/50 hover:text-white',
+              )}
+            >
+              Artist
+            </button>
+          </form>
+          <form action={startDemoFanSession}>
+            <button
+              type="submit"
+              disabled={role === 'FAN'}
+              title={role === 'FAN' ? 'Viewing as Fan' : 'Switch to Fan view'}
+              className={cn(
+                'rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide transition-colors',
+                role === 'FAN' ? 'bg-brand-500/20 text-brand-400' : 'text-white/50 hover:text-white',
+              )}
+            >
+              Fan
+            </button>
+          </form>
+        </div>
+      ) : (
+        <Badge tone="neutral">{role === 'FAN' ? 'Fan' : 'Artist'}</Badge>
+      )}
     </div>
   );
 }

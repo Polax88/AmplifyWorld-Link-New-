@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             {isDemoMode ? <Badge tone="brand">Demo Mode</Badge> : null}
           </div>
           <div className="flex items-center gap-4">
-            <DashboardNav role={session.user.role} />
+            <DashboardNav role={session.user.role} demoModeEnabled={isDemoMode} />
             {session.user.role !== 'FAN' ? <NotificationBell /> : null}
             <Avatar name={session.user.name ?? session.user.email ?? 'You'} size="sm" />
           </div>
