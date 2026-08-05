@@ -94,3 +94,43 @@ function topEntry(sources: Record<string, number>): string | null {
   const sorted = Object.entries(sources).sort((a, b) => b[1] - a[1]);
   return sorted[0]?.[0] ?? null;
 }
+
+const PERCENTILE_WINDOW_DAYS = 7;
+
+/**
+ * A page's rank within its own genre this week — the "flex metric" shown
+ * next to the AMI score for shareable social proof. A NEW, separate export
+ * (not folded into `getPageMomentumHistory`, which the public REST API also
+ * depends on) so this addition can't ever change that endpoint's contract.
+ * Uses each same-genre page's best score in the trailing 7 days so "this
+ * week" in the UI copy is literally true, not just a snapshot of today.
+ */
+export async function getGenrePercentile(
+  pageId: string,
+): Promise<{ genre: string; percentile: number; totalInGenre: number } | null> {
+  const page = await prisma.page.findUnique({ where: { id: pageId }, select: { genre: true } });
+  if (!page?.genre) return null;
+
+  const windowStart = new Date(Date.now() - PERCENTILE_WINDOW_DAYS * ONE_DAY_MS);
+  const rows = await prisma.pageMomentumScore.findMany({
+    where: { date: { gte: windowStart }, page: { genre: page.genre } },
+    select: { pageId: true, score: true },
+  });
+  if (rows.length === 0) return null;
+
+  const bestByPage = new Map<string, number>();
+  for (const row of rows) {
+    bestByPage.set(row.pageId, Math.max(bestByPage.get(row.pageId) ?? 0, row.score));
+  }
+
+  const myScore = bestByPage.get(pageId);
+  if (myScore === undefined) return null;
+
+  const totalInGenre = bestByPage.size;
+  if (totalInGenre < 2) return null;
+
+  const rank = [...bestByPage.values()].filter((score) => score > myScore).length + 1;
+  const percentile = Math.max(1, Math.ceil((rank / totalInGenre) * 100));
+
+  return { genre: page.genre, percentile, totalInGenre };
+}

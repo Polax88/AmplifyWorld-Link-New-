@@ -2,13 +2,19 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, adminProcedure } from '../trpc';
 import type { Context } from '../context';
-import { getLeaderboard, getPageMomentumHistory } from '../../services/momentum-queries';
+import { getGenrePercentile, getLeaderboard, getPageMomentumHistory } from '../../services/momentum-queries';
 
 export const momentumRouter = router({
   /** A page's own Artist Momentum Index: current score + trailing 30-day history, for the editor's momentum panel. */
   forPage: protectedProcedure.input(z.object({ pageId: z.string() })).query(async ({ ctx, input }) => {
     await assertOwnership(ctx, input.pageId);
     return getPageMomentumHistory(input.pageId);
+  }),
+
+  /** This page's rank within its own genre this week — the AMI card's shareable "flex metric". */
+  genrePercentile: protectedProcedure.input(z.object({ pageId: z.string() })).query(async ({ ctx, input }) => {
+    await assertOwnership(ctx, input.pageId);
+    return getGenrePercentile(input.pageId);
   }),
 
   /**

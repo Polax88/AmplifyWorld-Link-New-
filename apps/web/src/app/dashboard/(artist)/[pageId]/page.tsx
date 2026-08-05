@@ -147,19 +147,26 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           </div>
         ) : null}
 
-        <MomentumPanel pageId={pageId} />
+        <MomentumPanel
+          pageId={pageId}
+          pageTitle={page.title}
+          pageHandle={page.handle}
+          viberateConnected={Boolean(page.viberateArtistId)}
+        />
 
         <AmpsBalanceCard pageId={pageId} />
 
-        <ConnectedPlatformsCard
-          pageId={pageId}
-          socialBlocks={page.blocks
-            .filter((block) => block.type === 'social')
-            .map((block) => ({ id: block.id, config: block.config as SocialBlockConfig }))}
-          viberateEnabled={viberateEnabled}
-          viberateArtistId={page.viberateArtistId}
-          viberateConnectedAt={page.viberateConnectedAt}
-        />
+        <div id="connected-platforms">
+          <ConnectedPlatformsCard
+            pageId={pageId}
+            socialBlocks={page.blocks
+              .filter((block) => block.type === 'social')
+              .map((block) => ({ id: block.id, config: block.config as SocialBlockConfig }))}
+            viberateEnabled={viberateEnabled}
+            viberateArtistId={page.viberateArtistId}
+            viberateConnectedAt={page.viberateConnectedAt}
+          />
+        </div>
 
         {demoModeEnabled ? (
           <ConnectPlatformsCard
@@ -175,7 +182,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
 
         <PassesCard pageId={pageId} />
 
-        <section className="flex flex-col gap-3">
+        <section id="smart-links" className="flex flex-col gap-3">
           <div>
             <h2 className="text-xs font-semibold uppercase tracking-wide text-white/50">Smart links</h2>
             <p className="mt-0.5 text-xs text-white/35">
