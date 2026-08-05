@@ -21,24 +21,34 @@ export const predictionsRouter = router({
   openMarkets: protectedProcedure.query(async ({ ctx }) => {
     await ensureDiscoverRosterSeeded();
     const markets = await ctx.prisma.predictionMarket.findMany({
-      orderBy: { closesAt: 'asc' },
+      where: { closesAt: { gt: new Date() } },
       take: 60,
       include: { page: { select: { title: true, handle: true, genre: true, country: true } } },
     });
 
-    return markets.map((market) => ({
-      id: market.id,
-      subjectType: market.subjectType,
-      pageId: market.pageId,
-      title: marketTitle(market),
-      handle: market.page?.handle ?? null,
-      genre: market.subjectType === 'ARTIST' ? market.page?.genre ?? null : null,
-      country: market.subjectType === 'ARTIST' ? market.page?.country ?? null : null,
-      question: market.question,
-      odds: market.odds,
-      payoutMultiplier: Math.round((1 / market.odds) * 100) / 100,
-      closesAt: market.closesAt,
-    }));
+    const stakeTotals = await ctx.prisma.predictionPick.groupBy({
+      by: ['marketId'],
+      where: { marketId: { in: markets.map((market) => market.id) } },
+      _sum: { stakeAmount: true },
+    });
+    const totalStakedByMarket = new Map(stakeTotals.map((row) => [row.marketId, row._sum.stakeAmount ?? 0]));
+
+    return markets
+      .map((market) => ({
+        id: market.id,
+        subjectType: market.subjectType,
+        pageId: market.pageId,
+        title: marketTitle(market),
+        handle: market.page?.handle ?? null,
+        genre: market.subjectType === 'ARTIST' ? market.page?.genre ?? null : null,
+        country: market.subjectType === 'ARTIST' ? market.page?.country ?? null : null,
+        question: market.question,
+        odds: market.odds,
+        payoutMultiplier: Math.round((1 / market.odds) * 100) / 100,
+        closesAt: market.closesAt,
+        totalStaked: totalStakedByMarket.get(market.id) ?? 0,
+      }))
+      .sort((a, b) => b.totalStaked - a.totalStaked || a.closesAt.getTime() - b.closesAt.getTime());
   }),
 
   placePick: protectedProcedure

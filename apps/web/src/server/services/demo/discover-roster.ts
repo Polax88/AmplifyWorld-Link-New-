@@ -57,12 +57,13 @@ export async function ensureDiscoverRosterSeeded(): Promise<void> {
     await seedArtistMarkets(created);
   }
 
-  // A separate, independent idempotency check from the page-topping-up
-  // above — this exact split is what lets genre/country markets get
-  // backfilled onto a deployment that already had its roster (and the
-  // original artist-only markets) fully seeded before these two subject
-  // types existed, without ever re-seeding or duplicating the artist ones.
-  await ensureGenreAndCountryMarketsSeeded();
+  // Independent of the page-topping-up above, and re-run on every call (not
+  // gated behind existingCount) — these two keep the *currently open* market
+  // supply topped up as markets close, the same "self-heals on read"
+  // convention as the page top-up itself, just re-checked every time instead
+  // of only once.
+  await ensureOpenGenreAndCountryMarkets();
+  await ensureOpenArtistMarkets();
 }
 
 async function generateLightMomentumHistory(pageId: string): Promise<number> {
@@ -138,18 +139,27 @@ async function seedArtistMarkets(pages: Array<{ pageId: string; score: number }>
 }
 
 /**
- * One GENRE market per genre and one COUNTRY market per country — kept
- * behind its own idempotency check (rather than folded into the page/
- * artist-market seeding above) so it can backfill onto a deployment where
- * the roster and artist markets were already fully seeded before these two
- * subject types existed, without re-seeding or duplicating anything.
+ * Keeps exactly one *open* (`closesAt` in the future) GENRE market per genre
+ * and one *open* COUNTRY market per country. Markets aren't deleted when
+ * they close — `predictions.openMarkets` just stops returning them — so this
+ * tops up whichever ones have quietly closed, via two cheap `groupBy`
+ * queries against the currently-open set rather than 20 individual counts.
  */
-async function ensureGenreAndCountryMarketsSeeded(): Promise<void> {
-  const existing = await prisma.predictionMarket.count({ where: { subjectType: { in: ['GENRE', 'COUNTRY'] } } });
-  if (existing > 0) return;
+async function ensureOpenGenreAndCountryMarkets(): Promise<void> {
+  const now = new Date();
+  const [openGenres, openCountries] = await Promise.all([
+    prisma.predictionMarket.groupBy({ by: ['genre'], where: { subjectType: 'GENRE', closesAt: { gt: now } } }),
+    prisma.predictionMarket.groupBy({ by: ['country'], where: { subjectType: 'COUNTRY', closesAt: { gt: now } } }),
+  ]);
+  const openGenreSet = new Set(openGenres.map((g) => g.genre));
+  const openCountrySet = new Set(openCountries.map((c) => c.country));
+
+  const missingGenres = GENRES.filter((genre) => !openGenreSet.has(genre));
+  const missingCountries = COUNTRIES.filter((country) => !openCountrySet.has(country));
+  if (missingGenres.length === 0 && missingCountries.length === 0) return;
 
   const genreMarkets = await Promise.all(
-    GENRES.map((genre) =>
+    missingGenres.map((genre) =>
       prisma.predictionMarket.create({
         data: {
           subjectType: 'GENRE',
@@ -163,7 +173,7 @@ async function ensureGenreAndCountryMarketsSeeded(): Promise<void> {
   );
 
   const countryMarkets = await Promise.all(
-    COUNTRIES.map((country) =>
+    missingCountries.map((country) =>
       prisma.predictionMarket.create({
         data: {
           subjectType: 'COUNTRY',
@@ -177,6 +187,53 @@ async function ensureGenreAndCountryMarketsSeeded(): Promise<void> {
   );
 
   await seedPredictorPicks([...genreMarkets, ...countryMarkets]);
+}
+
+/**
+ * Tops up open (`closesAt` in the future) ARTIST-subject markets back up to
+ * `PREDICTION_MARKET_COUNT`, drawing from any published page with a `genre`
+ * set and no currently-open market of its own — the roster **and** real
+ * artist pages alike, so a real artist's own-page market (created once, at
+ * signup, by `generateDemoArtist`) gets auto-replaced here too once it
+ * closes, with no special-casing needed. Unlike the initial roster seed
+ * (`seedArtistMarkets`), this skips momentum-weighted candidate selection —
+ * it's a background self-heal, not the curated first impression, so a plain
+ * random pick among eligible pages is enough.
+ */
+async function ensureOpenArtistMarkets(): Promise<void> {
+  const now = new Date();
+  const openCount = await prisma.predictionMarket.count({ where: { subjectType: 'ARTIST', closesAt: { gt: now } } });
+  if (openCount >= PREDICTION_MARKET_COUNT) return;
+
+  const pagesWithOpenMarket = await prisma.predictionMarket.findMany({
+    where: { subjectType: 'ARTIST', closesAt: { gt: now }, pageId: { not: null } },
+    select: { pageId: true },
+  });
+  const excludeIds = pagesWithOpenMarket.map((m) => m.pageId).filter((id): id is string => id !== null);
+
+  const candidates = await prisma.page.findMany({
+    where: { status: 'PUBLISHED', genre: { not: null }, id: { notIn: excludeIds } },
+    select: { id: true },
+    take: 200,
+  });
+  if (candidates.length === 0) return;
+
+  const chosen = pickN(candidates, Math.min(PREDICTION_MARKET_COUNT - openCount, candidates.length));
+  const markets = await Promise.all(
+    chosen.map((candidate) =>
+      prisma.predictionMarket.create({
+        data: {
+          subjectType: 'ARTIST',
+          pageId: candidate.id,
+          question: 'Will this artist break into the Top 100 this month?',
+          odds: rand(0.15, 0.65),
+          closesAt: new Date(Date.now() + randInt(3, 21) * DAY_MS),
+        },
+      }),
+    ),
+  );
+
+  await seedPredictorPicks(markets);
 }
 
 /** Seeds ~30 synthetic non-logging-in "predictor" users with historical picks against the given markets, so the Predictions leaderboard has real spread from the start. */
