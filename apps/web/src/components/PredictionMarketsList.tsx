@@ -108,14 +108,18 @@ function MarketCard({ market, isHottest }: { market: Market; isHottest: boolean 
         ) : null}
       </div>
       <p className="text-sm text-white/60">{market.question}</p>
-      <div className="flex items-center gap-2 text-xs text-white/50">
-        <TrendingUp className="size-3.5" />
-        ~{Math.round(market.odds * 100)}% consensus chance · {market.payoutMultiplier}x payout
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/50">
+        <span className="flex shrink-0 items-center gap-1 whitespace-nowrap">
+          <TrendingUp className="size-3.5" />
+          ~{Math.round(market.odds * 100)}% consensus chance
+        </span>
+        <span className="shrink-0 whitespace-nowrap">{market.payoutMultiplier}x payout</span>
       </div>
-      <div className="flex items-center gap-2 text-xs text-white/40">
-        <MarketCountdown closesAt={market.closesAt} />
-        <span className="text-white/25">·</span>
-        <span>{market.totalStaked.toLocaleString()} AMPS staked</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/40">
+        <span className="shrink-0 whitespace-nowrap">
+          <MarketCountdown closesAt={market.closesAt} />
+        </span>
+        <span className="shrink-0 whitespace-nowrap">{market.totalStaked.toLocaleString()} AMPS staked</span>
       </div>
 
       <div className="flex items-center gap-2">
