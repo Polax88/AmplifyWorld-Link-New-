@@ -44,16 +44,16 @@ export function NotificationBell() {
                   <TrendingUp className="size-4" />
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm text-white">
+                  <p className="text-sm text-ink">
                     <span className="font-medium">{alert.pageTitle}</span> {alert.message.toLowerCase()}
                   </p>
-                  <p className="text-xs text-white/40">{new Date(alert.date).toLocaleDateString()}</p>
+                  <p className="text-xs text-ink-faint">{new Date(alert.date).toLocaleDateString()}</p>
                 </div>
                 {!alert.seen ? <Badge tone="brand">New</Badge> : null}
               </Card>
             ))
           ) : (
-            <p className="py-6 text-center text-sm text-white/50">No alerts yet.</p>
+            <p className="py-6 text-center text-sm text-ink-muted">No alerts yet.</p>
           )}
         </div>
       </Modal>

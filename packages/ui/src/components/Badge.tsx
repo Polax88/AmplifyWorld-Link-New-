@@ -6,7 +6,7 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const toneClasses: Record<NonNullable<BadgeProps['tone']>, string> = {
-  neutral: 'bg-white/8 text-white/70',
+  neutral: 'bg-white/7 text-ink-muted',
   brand: 'bg-brand-500/15 text-brand-400',
   success: 'bg-emerald-500/15 text-emerald-400',
   warning: 'bg-amber-500/15 text-amber-400',

@@ -1,47 +1,38 @@
-'use client';
-
-import { useEffect, useRef, useState } from 'react';
+import { useId } from 'react';
 import { cn } from '../lib/cn';
 
 export interface LogoProps {
   className?: string;
   height?: number;
-  src?: string;
 }
 
 /**
- * Official AmplifyWorld wordmark. Falls back to a styled text wordmark if
- * the SVG asset isn't present at `src` yet (e.g. `apps/web/public/logos/`) —
- * drop the real file in and every call site upgrades automatically, no code
- * change needed.
+ * AmplifyWorld's mark + wordmark, rendered inline as SVG/text — nothing to
+ * fetch, nothing to 404 on. The mark is three ascending bars (momentum/
+ * sound), on the brand gradient; the wordmark uses the shared ink token so
+ * it stays legible against the design system's palette everywhere it's
+ * dropped in (nav, login, public-page footer).
  */
-export function Logo({ className, height = 20, src = '/logos/amplifyworld-wordmark.svg' }: LogoProps) {
-  const [failed, setFailed] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  // The server-rendered <img> can start loading (and erroring, on a fast
-  // localhost 404) before hydration attaches `onError` — that event is
-  // otherwise lost. Checking `complete`/`naturalWidth` on mount catches it.
-  useEffect(() => {
-    const img = imgRef.current;
-    if (img && img.complete && img.naturalWidth === 0) {
-      setFailed(true);
-    }
-  }, []);
-
-  if (failed) {
-    return <span className={cn('text-sm font-semibold tracking-tight text-white', className)}>AmplifyWorld</span>;
-  }
+export function Logo({ className, height = 20 }: LogoProps) {
+  const gradientId = useId();
 
   return (
-    <img
-      ref={imgRef}
-      src={src}
-      alt="AmplifyWorld"
-      height={height}
-      style={{ height, width: 'auto' }}
-      className={className}
-      onError={() => setFailed(true)}
-    />
+    <span className={cn('inline-flex items-center gap-2', className)} style={{ height }}>
+      <svg width={height} height={height} viewBox="0 0 24 24" fill="none" aria-hidden="true" className="shrink-0">
+        <rect width="24" height="24" rx="7" fill={`url(#${gradientId})`} />
+        <path d="M7.5 15.5V11" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        <path d="M12 15.5V8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        <path d="M16.5 15.5V10" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#ff4081" />
+            <stop offset="1" stopColor="#c9004a" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <span className="font-semibold tracking-tight text-ink" style={{ fontSize: Math.max(12, Math.round(height * 0.7)) }}>
+        AmplifyWorld
+      </span>
+    </span>
   );
 }

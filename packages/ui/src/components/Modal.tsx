@@ -22,19 +22,19 @@ export function Modal({ open, onOpenChange, title, description, children, classN
         <Dialog.Content
           className={cn(
             'fixed left-1/2 top-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2',
-            'rounded-2xl border border-white/10 bg-surface-raised p-6 shadow-glow',
+            'rounded-2xl border border-white/8 bg-surface-raised p-6 shadow-glow',
             'focus:outline-none',
             className,
           )}
         >
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <Dialog.Title className="text-lg font-semibold text-white">{title}</Dialog.Title>
+              <Dialog.Title className="text-lg font-semibold text-ink">{title}</Dialog.Title>
               {description ? (
-                <Dialog.Description className="mt-1 text-sm text-white/60">{description}</Dialog.Description>
+                <Dialog.Description className="mt-1 text-sm text-ink-muted">{description}</Dialog.Description>
               ) : null}
             </div>
-            <Dialog.Close className="rounded-full p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white">
+            <Dialog.Close className="rounded-full p-1.5 text-ink-faint transition-colors hover:bg-white/8 hover:text-ink">
               <X className="size-4" />
             </Dialog.Close>
           </div>

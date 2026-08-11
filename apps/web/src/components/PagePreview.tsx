@@ -49,7 +49,7 @@ export function PagePreview({
         </div>
         <div className="text-center">
           <h2 className="text-base font-semibold">{title || 'Untitled page'}</h2>
-          {bio ? <p className="mt-1 text-xs leading-relaxed text-white/60">{bio}</p> : null}
+          {bio ? <p className="mt-1 text-xs leading-relaxed text-ink-muted">{bio}</p> : null}
         </div>
         <div className={cn('flex w-full flex-col', compact ? 'gap-1.5' : 'gap-2.5')}>
           {blocks
@@ -58,7 +58,7 @@ export function PagePreview({
               <BlockRenderer key={block.id} block={block} pageHandle={handle ?? 'preview'} />
             ))}
           {blocks.length === 0 ? (
-            <p className="text-center text-xs text-white/30">Add a block to see it here.</p>
+            <p className="text-center text-xs text-ink-faint">Add a block to see it here.</p>
           ) : null}
         </div>
       </div>

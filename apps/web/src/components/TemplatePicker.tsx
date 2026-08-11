@@ -22,10 +22,10 @@ export function TemplatePicker({ pageId, currentTemplateKey }: { pageId: string;
   return (
     <Card className="gap-3">
       <div className="flex items-center gap-2">
-        <LayoutTemplate className="size-4 text-white/50" />
+        <LayoutTemplate className="size-4 text-ink-muted" />
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-white/50">Page template</h2>
-          <p className="mt-0.5 text-xs text-white/35">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Page template</h2>
+          <p className="mt-0.5 text-xs text-ink-faint">
             Sets your smart links&apos; default order/emphasis for the use case — free on every plan.
           </p>
         </div>
@@ -46,10 +46,10 @@ export function TemplatePicker({ pageId, currentTemplateKey }: { pageId: string;
               }
             >
               <span className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-white">{template.displayName}</span>
+                <span className="text-sm font-medium text-ink">{template.displayName}</span>
                 {active ? <Check className="size-3.5 text-brand-400" /> : null}
               </span>
-              <span className="text-xs text-white/50">{template.description}</span>
+              <span className="text-xs text-ink-muted">{template.description}</span>
             </button>
           );
         })}

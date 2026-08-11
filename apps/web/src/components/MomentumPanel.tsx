@@ -75,9 +75,9 @@ function PillarRow({
   return (
     <div className="flex flex-col gap-1 text-xs">
       <div className="flex items-center gap-3">
-        <span className="w-32 shrink-0 text-white/60" title={PILLAR_DESCRIPTIONS[pillar]}>
+        <span className="w-32 shrink-0 text-ink-muted" title={PILLAR_DESCRIPTIONS[pillar]}>
           {PILLAR_LABELS[pillar]}
-          <span className="ml-1.5 text-[10px] text-white/30">{Math.round(score.weight * 100)}%</span>
+          <span className="ml-1.5 text-[10px] text-ink-faint">{Math.round(score.weight * 100)}%</span>
         </span>
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/8">
           <div
@@ -85,7 +85,7 @@ function PillarRow({
             style={{ width: `${Math.round(score.value)}%` }}
           />
         </div>
-        <span className="w-7 shrink-0 text-right tabular-nums text-white/70">{Math.round(score.value)}</span>
+        <span className="w-7 shrink-0 text-right tabular-nums text-ink-muted">{Math.round(score.value)}</span>
         <Badge tone={SOURCE_BADGE[score.source].tone} className="shrink-0">
           {SOURCE_BADGE[score.source].label}
         </Badge>
@@ -120,7 +120,7 @@ function ConfidenceBar({ confidence }: { confidence: MomentumConfidence }) {
   return (
     <div className="flex flex-col gap-1.5 border-t border-white/8 pt-3">
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
           <ShieldCheck className="size-3.5" />
           Confidence
         </span>
@@ -131,7 +131,7 @@ function ConfidenceBar({ confidence }: { confidence: MomentumConfidence }) {
         <div className="h-full bg-white/30" style={{ width: `${confidence.thirdPartyShare * 100}%` }} />
         <div className="h-full bg-white/10" style={{ width: `${confidence.estimatedShare * 100}%` }} />
       </div>
-      <p className="text-[11px] text-white/35">
+      <p className="text-[11px] text-ink-faint">
         {Math.round(confidence.firstPartyShare * 100)}% from your connected first-party click &amp; conversion data
         {confidence.thirdPartyShare > 0 ? `, ${Math.round(confidence.thirdPartyShare * 100)}% from Viberate` : ''}
         {confidence.estimatedShare > 0 ? `, ${Math.round(confidence.estimatedShare * 100)}% estimated` : ''}.
@@ -161,8 +161,8 @@ export function MomentumPanel({
 
   if (!momentum.data?.current) {
     return (
-      <Card className="gap-1 text-sm text-white/50">
-        <span className="text-xs font-semibold uppercase tracking-wide text-white/40">
+      <Card className="gap-1 text-sm text-ink-muted">
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
           Artist Momentum Index (AMI)
         </span>
         <p>Your AMI score appears after your page gets its first day of traffic.</p>
@@ -181,7 +181,7 @@ export function MomentumPanel({
   return (
     <Card className="gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-white/40">
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
           Artist Momentum Index (AMI)
         </span>
         <div className="flex items-center gap-2">
@@ -203,7 +203,7 @@ export function MomentumPanel({
         <div className="flex flex-col gap-1">
           <span className="text-3xl font-semibold tabular-nums">{current.score}</span>
           {percentileLabel ? (
-            <span className="flex items-center gap-1 text-xs text-white/50">
+            <span className="flex items-center gap-1 text-xs text-ink-muted">
               <Sparkles className="size-3 text-brand-400" />
               {percentileLabel}
             </span>
@@ -211,10 +211,10 @@ export function MomentumPanel({
         </div>
         <Sparkline values={history.map((h) => h.score)} width={160} height={44} />
       </div>
-      <p className="text-xs text-white/40">30-day trend · 0-100 AMI score</p>
+      <p className="text-xs text-ink-faint">30-day trend · 0-100 AMI score</p>
 
       <div className="mt-1 flex flex-col gap-1.5 border-t border-white/8 pt-3">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
           The 5 AMI pillars — weight shown next to each
         </span>
         {PILLAR_ORDER.map((pillarKey) => (

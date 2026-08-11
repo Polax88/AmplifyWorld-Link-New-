@@ -8,12 +8,16 @@ export interface SparklineProps {
   strokeColor?: string;
 }
 
-/** Minimal hand-rolled SVG trend line — no charting dependency for a single 30-point series. */
-export function Sparkline({ values, width = 240, height = 56, className, strokeColor = '#ff4081' }: SparklineProps) {
+/**
+ * Minimal hand-rolled SVG trend line — no charting dependency for a single
+ * 30-point series. Defaults to the secondary "data" accent (not brand pink)
+ * so score/trend surfaces read as calm data, not another CTA.
+ */
+export function Sparkline({ values, width = 240, height = 56, className, strokeColor = '#45b8ab' }: SparklineProps) {
   if (values.length === 0) {
     return (
       <div
-        className={cn('flex items-center justify-center text-xs text-white/30', className)}
+        className={cn('flex items-center justify-center text-xs text-ink-faint', className)}
         style={{ width, height }}
       >
         No data yet

@@ -31,7 +31,7 @@ export function TrackingHygieneCard({
             Tracking hygiene
             <Badge tone="warning">{hygiene.data.length}</Badge>
           </h2>
-          <p className="mt-0.5 text-xs text-white/50">
+          <p className="mt-0.5 text-xs text-ink-muted">
             These links aren&apos;t classified yet, so their clicks won&apos;t count toward your AMI Conversion score.
           </p>
         </div>
@@ -42,7 +42,7 @@ export function TrackingHygieneCard({
             key={issue.blockId}
             type="button"
             onClick={() => onFix(issue.blockId)}
-            className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/70 transition-colors hover:border-amber-400/40 hover:text-white"
+            className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-ink-muted transition-colors hover:border-amber-400/40 hover:text-ink"
           >
             <span className="capitalize">
               {issue.type}: {issue.label}
