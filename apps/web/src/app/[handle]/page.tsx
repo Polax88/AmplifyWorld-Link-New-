@@ -40,14 +40,14 @@ export default async function ArtistPage({ params }: { params: Promise<{ handle:
       <div className="flex animate-fade-up flex-col items-center gap-4 text-center">
         <div className="relative flex items-center justify-center">
           <div
-            className="absolute size-32 rounded-full opacity-30 blur-3xl"
+            className="absolute size-28 rounded-full opacity-20 blur-2xl"
             style={{ background: 'var(--theme-accent)' }}
           />
           <Avatar src={page.avatarUrl} name={page.title} size="xl" ring className="relative" />
         </div>
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{page.title}</h1>
-          {page.bio ? <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-white/60">{page.bio}</p> : null}
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">{page.title}</h1>
+          {page.bio ? <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-ink-muted">{page.bio}</p> : null}
         </div>
       </div>
 
@@ -58,13 +58,13 @@ export default async function ArtistPage({ params }: { params: Promise<{ handle:
             className="animate-fade-up"
             style={{ animationDelay: `${Math.min(index, 6) * 60 + 100}ms` }}
           >
-            <BlockRenderer block={block} />
+            <BlockRenderer block={block} pageHandle={handle} />
           </div>
         ))}
       </div>
 
       <footer
-        className="mt-4 flex animate-fade-up items-center gap-1.5 text-xs text-white/30"
+        className="mt-4 flex animate-fade-up items-center gap-1.5 text-xs text-ink-faint"
         style={{ animationDelay: '400ms' }}
       >
         Powered by <Logo height={12} className="opacity-60" />

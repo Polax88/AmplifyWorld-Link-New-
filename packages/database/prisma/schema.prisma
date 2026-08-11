@@ -127,16 +127,20 @@ enum PageStatus {
 }
 
 model Page {
-  id        String     @id @default(cuid())
-  handle    String     @unique // public URL slug, e.g. amplify.world/link/{handle}
-  title     String
-  bio       String?
-  avatarUrl String?
-  theme     Json       @default("{}") // { themeKey, layout } — validated against @amplifyworld/core's theme registry
-  status    PageStatus @default(DRAFT)
-  ownerId   String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id          String     @id @default(cuid())
+  handle      String     @unique // public URL slug, e.g. amplify.world/link/{handle}
+  title       String
+  bio         String?
+  avatarUrl   String?
+  theme       Json       @default("{}") // { themeKey, layout } — validated against @amplifyworld/core's theme registry
+  // Which of the 4 free-tier page templates (Minimal Links, Release Drop,
+  // Tour Dates, Merch Drop) this page's block order/emphasis was last set
+  // from — see @amplifyworld/core's template registry and page.applyTemplate.
+  templateKey String     @default("minimal-links")
+  status      PageStatus @default(DRAFT)
+  ownerId     String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   // Set once an artist connects a Viberate match (onboarding wizard or the
   // "Connect Viberate" editor action) — null means not connected, and every

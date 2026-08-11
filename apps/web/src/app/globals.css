@@ -8,7 +8,9 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
-  /* Brand: AmplifyWorld's official pink (#f50057), per amplifyworld.ai. */
+  /* Brand: AmplifyWorld's official pink (#f50057), per amplifyworld.ai. Kept
+     exactly — only how hard it's leaned on (glow spread, wash opacity)
+     changes below, not the hue itself. */
   --color-brand-50: #ffe4ec;
   --color-brand-400: #ff4081;
   --color-brand-500: #f50057;
@@ -17,18 +19,33 @@
   --color-brand: var(--color-brand-500);
   --color-accent: #ff5c93;
 
-  --color-canvas: #08070c;
-  --color-surface: #100e18;
-  --color-surface-raised: #17141f;
+  /* Secondary accent — cool and muted, reserved for data visualization
+     (AMI pillar bars, sparklines) so score/data surfaces don't read as
+     pink-on-pink. Never used for CTAs; those stay brand-colored. */
+  --color-data-400: #7dd8cc;
+  --color-data-500: #45b8ab;
 
-  --shadow-glow: 0 0 0 1px rgb(245 0 87 / 0.15), 0 8px 30px -8px rgb(245 0 87 / 0.35);
+  /* A graphite triad, not near-black — reads calmer/more "professional
+     tool" than the previous void-black canvas. */
+  --color-canvas: #0c0c11;
+  --color-surface: #14131b;
+  --color-surface-raised: #1c1a24;
+
+  /* Semantic text scale for the shared @amplifyworld/ui components, in
+     place of ad-hoc text-white/NN opacity per component. */
+  --color-ink: #f6f5f8;
+  --color-ink-muted: #a6a4b0;
+  --color-ink-faint: #6c6a76;
+
+  --shadow-glow: 0 0 0 1px rgb(245 0 87 / 0.12), 0 6px 20px -10px rgb(245 0 87 / 0.28);
 }
 
 @layer base {
   body {
+    /* Softer, smaller wash than before — a hint of brand color, not a glow. */
     background:
-      radial-gradient(ellipse 80% 50% at 50% -10%, rgb(245 0 87 / 0.25), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgb(255 92 147 / 0.12), transparent),
+      radial-gradient(ellipse 70% 40% at 50% -10%, rgb(245 0 87 / 0.12), transparent),
+      radial-gradient(ellipse 50% 30% at 100% 0%, rgb(255 92 147 / 0.06), transparent),
       var(--color-canvas);
     background-attachment: fixed;
   }
@@ -41,7 +58,7 @@
 }
 
 @utility bg-grain {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
 }
 
 @keyframes fade-up {

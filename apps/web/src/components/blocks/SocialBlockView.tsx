@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Instagram,
   Youtube,
@@ -13,6 +15,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { SocialBlockConfig } from '@amplifyworld/core';
+import { buildUtmParams, appendUtmParams } from '@amplifyworld/core';
+import { trpc } from '../../lib/trpc/client';
 
 export const platformIcon: Record<SocialBlockConfig['platform'], LucideIcon> = {
   instagram: Instagram,
@@ -42,14 +46,28 @@ export const platformLabel: Record<SocialBlockConfig['platform'], string> = {
   other: 'Other',
 };
 
-export function SocialBlockView({ config }: { config: SocialBlockConfig }) {
+export function SocialBlockView({
+  pageId,
+  pageHandle,
+  blockId,
+  config,
+}: {
+  pageId: string;
+  pageHandle: string;
+  blockId: string;
+  config: SocialBlockConfig;
+}) {
   const Icon = platformIcon[config.platform];
+  const trackClick = trpc.analytics.trackBlockClick.useMutation();
+  const conversionType = config.conversionType ?? 'follow';
+  const href = appendUtmParams(config.url, buildUtmParams(config.platform, pageHandle));
 
   return (
     <a
-      href={config.url}
+      href={href}
       target="_blank"
       rel="noreferrer"
+      onClick={() => trackClick.mutate({ pageId, blockId, blockType: 'social', conversionType })}
       className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/80 transition-all duration-150 hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
     >
       <Icon className="size-4 text-white/50 group-hover:text-[var(--theme-accent,var(--color-brand-400))]" />

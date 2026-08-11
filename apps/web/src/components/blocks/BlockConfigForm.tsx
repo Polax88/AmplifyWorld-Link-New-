@@ -7,8 +7,34 @@ import type {
   SocialBlockConfig,
   EmbedBlockConfig,
   GatedContentBlockConfig,
+  ConversionEventType,
 } from '@amplifyworld/core';
+import { CONVERSION_EVENT_TYPES, CONVERSION_EVENT_LABELS } from '@amplifyworld/core';
 import { platformLabel } from './SocialBlockView';
+
+/** Shared by the link and social forms — the classification the AMI Conversion pillar and tracking-hygiene indicator both key off. */
+function ConversionTypeSelect({
+  value,
+  onChange,
+}: {
+  value: ConversionEventType;
+  onChange: (value: ConversionEventType) => void;
+}) {
+  return (
+    <Select
+      label="Conversion type"
+      value={value}
+      onChange={(e) => onChange(e.target.value as ConversionEventType)}
+      hint="What this link is meant to accomplish — feeds your AMI Conversion score and tracking."
+    >
+      {CONVERSION_EVENT_TYPES.map((type) => (
+        <option key={type} value={type} className="bg-surface-raised">
+          {CONVERSION_EVENT_LABELS[type]}
+        </option>
+      ))}
+    </Select>
+  );
+}
 
 interface FormProps<TConfig> {
   config: TConfig;
@@ -57,16 +83,18 @@ function SaveButton({ saving }: { saving: boolean }) {
 function LinkForm({ config, onSave, saving }: FormProps<LinkBlockConfig>) {
   const [label, setLabel] = useState(config.label);
   const [url, setUrl] = useState(config.url);
+  const [conversionType, setConversionType] = useState<ConversionEventType>(config.conversionType ?? 'generic');
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    onSave({ ...config, label, url });
+    onSave({ ...config, label, url, conversionType });
   }
 
   return (
     <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
       <Input label="Label" value={label} onChange={(e) => setLabel(e.target.value)} required />
       <Input label="URL" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required />
+      <ConversionTypeSelect value={conversionType} onChange={setConversionType} />
       <SaveButton saving={saving} />
     </form>
   );
@@ -76,10 +104,11 @@ function SocialForm({ config, onSave, saving }: FormProps<SocialBlockConfig>) {
   const [platform, setPlatform] = useState(config.platform);
   const [handle, setHandle] = useState(config.handle);
   const [url, setUrl] = useState(config.url);
+  const [conversionType, setConversionType] = useState<ConversionEventType>(config.conversionType ?? 'follow');
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    onSave({ ...config, platform, handle, url });
+    onSave({ ...config, platform, handle, url, conversionType });
   }
 
   return (
@@ -111,6 +140,7 @@ function SocialForm({ config, onSave, saving }: FormProps<SocialBlockConfig>) {
       </Select>
       <Input label="Handle" value={handle} onChange={(e) => setHandle(e.target.value)} required />
       <Input label="URL" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required />
+      <ConversionTypeSelect value={conversionType} onChange={setConversionType} />
       <SaveButton saving={saving} />
     </form>
   );

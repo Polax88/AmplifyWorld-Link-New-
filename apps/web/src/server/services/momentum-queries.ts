@@ -67,12 +67,16 @@ export async function getPageMomentumHistory(pageId: string) {
   const history = rows
     .slice()
     .reverse()
-    .map((row) => ({
-      date: row.date,
-      score: row.score,
-      scoreChange: row.scoreChange,
-      breakdown: (row.breakdown as unknown as StoredMomentumBreakdown).subScores,
-    }));
+    .map((row) => {
+      const stored = row.breakdown as unknown as StoredMomentumBreakdown;
+      return {
+        date: row.date,
+        score: row.score,
+        scoreChange: row.scoreChange,
+        breakdown: stored.subScores,
+        confidence: stored.confidence,
+      };
+    });
 
   return { current: history.at(-1) ?? null, history };
 }

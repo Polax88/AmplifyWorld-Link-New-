@@ -28,6 +28,8 @@ import { ConnectedPlatformsCard } from '../../../../components/ConnectedPlatform
 import { ConnectPlatformsCard } from '../../../../components/ConnectPlatformsCard';
 import { FansCard } from '../../../../components/FansCard';
 import { PassesCard } from '../../../../components/PassesCard';
+import { TemplatePicker } from '../../../../components/TemplatePicker';
+import { TrackingHygieneCard } from '../../../../components/TrackingHygieneCard';
 import { useDashboardContext } from '../../../../components/DashboardContext';
 import { SortableBlockCard } from './SortableBlockCard';
 
@@ -67,7 +69,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
   });
 
   if (pageQuery.isLoading || !page) {
-    return <p className="text-white/50">Loading…</p>;
+    return <p className="text-ink-muted">Loading…</p>;
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -93,7 +95,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-400">Your artist hub</p>
               <h1 className="text-lg font-semibold leading-tight">{page.title}</h1>
-              <p className="text-sm text-white/50">amplify.world/{page.handle}</p>
+              <p className="text-sm text-ink-muted">amplify.world/{page.handle}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -135,8 +137,10 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           </div>
         </div>
 
+        {setStatus.error ? <p className="-mt-2 text-xs text-red-400">{setStatus.error.message}</p> : null}
+
         {summary.data ? (
-          <div className="-mt-2 flex items-center gap-4 text-sm text-white/50">
+          <div className="-mt-2 flex items-center gap-4 text-sm text-ink-muted">
             <span className="flex items-center gap-1.5">
               <Eye className="size-3.5" />
               {summary.data.views} {summary.data.views === 1 ? 'view' : 'views'}
@@ -149,6 +153,10 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
         ) : null}
 
         <HubWelcomeBanner pageId={pageId} />
+
+        <TemplatePicker pageId={pageId} currentTemplateKey={page.templateKey} />
+
+        <TrackingHygieneCard pageId={pageId} onFix={setEditingBlockId} />
 
         <MomentumPanel
           pageId={pageId}
@@ -187,8 +195,8 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
 
         <section id="smart-links" className="flex flex-col gap-3">
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-white/50">Smart links</h2>
-            <p className="mt-0.5 text-xs text-white/35">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Smart links</h2>
+            <p className="mt-0.5 text-xs text-ink-faint">
               Everything a fan sees on your page, in the order they see it.
             </p>
           </div>
@@ -212,7 +220,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           </div>
 
           {page.blocks.length === 0 ? (
-            <Card className="items-center py-8 text-center text-sm text-white/50">
+            <Card className="items-center py-8 text-center text-sm text-ink-muted">
               No smart links yet — add one above.
             </Card>
           ) : null}
@@ -249,6 +257,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           avatarUrl={page.avatarUrl}
           blocks={page.blocks}
           theme={pageThemeSchema.parse(page.theme)}
+          handle={page.handle}
         />
       </div>
 
@@ -264,6 +273,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           avatarUrl={page.avatarUrl}
           blocks={page.blocks}
           theme={pageThemeSchema.parse(page.theme)}
+          handle={page.handle}
         />
       </Modal>
 

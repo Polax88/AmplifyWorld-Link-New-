@@ -133,8 +133,18 @@ function freshVisitorPool(): string[] {
 async function createSmartLinkBlocks(pageId: string, name: string): Promise<void> {
   const slug = slugify(name);
   const blocks: Prisma.BlockCreateManyInput[] = [
-    { pageId, type: 'link', position: 0, config: { label: 'Latest single — out now', url: 'https://example.com/latest' } },
-    { pageId, type: 'link', position: 1, config: { label: 'Tour dates', url: 'https://example.com/tour' } },
+    {
+      pageId,
+      type: 'link',
+      position: 0,
+      config: { label: 'Latest single — out now', url: 'https://example.com/latest', conversionType: 'stream' },
+    },
+    {
+      pageId,
+      type: 'link',
+      position: 1,
+      config: { label: 'Tour dates', url: 'https://example.com/tour', conversionType: 'ticket' },
+    },
     ...DEMO_SOCIAL_PLATFORMS.map((platform, index) => ({
       pageId,
       type: 'social',
@@ -192,16 +202,30 @@ async function generateAmiAndViberateHistory(
     const uniqueVisitors = Math.round(visits * rand(0.7, 0.9));
     const returningVisitors = Math.round(uniqueVisitors * rand(0.1, 0.35));
     const clicks = Math.round(visits * rand(0.25, 0.55));
+    const conversions = Math.round(clicks * rand(0.3, 0.65));
     const countries = pickN(COUNTRIES, randInt(2, 2 + Math.floor(progress * 6)));
     const sources = buildSources(visits);
 
-    const current: DailyPageMetrics = { date: dateKey, visits, uniqueVisitors, returningVisitors, clicks, countries, sources };
+    const current: DailyPageMetrics = {
+      date: dateKey,
+      visits,
+      uniqueVisitors,
+      returningVisitors,
+      clicks,
+      conversions,
+      countries,
+      sources,
+    };
     const rankScore = Math.min(98, Math.round(baseRank + progress * 24 + randInt(-3, 3)));
     const external: ExternalMomentumSignal = { current: rankScore, history: [...rankScoreHistory] };
 
     const result = calculateMomentumScore(current, metricsHistory, external);
     const scoreChange = result.score - previousScore;
-    const breakdown: StoredMomentumBreakdown = { subScores: result.breakdown, metrics: current };
+    const breakdown: StoredMomentumBreakdown = {
+      subScores: result.breakdown,
+      confidence: result.confidence,
+      metrics: current,
+    };
 
     scoreRows.push({
       pageId,
@@ -241,6 +265,8 @@ async function generateAmiAndViberateHistory(
   return previousScore;
 }
 
+const DEMO_CONVERSION_TYPES = ['stream', 'pre_save', 'ticket', 'merch', 'follow', 'generic'] as const;
+
 function buildAnonymousEvent(pageId: string, date: Date, visitorPool: string[]): Prisma.AnalyticsEventCreateManyInput {
   const isClick = Math.random() < 0.35;
   return {
@@ -251,6 +277,10 @@ function buildAnonymousEvent(pageId: string, date: Date, visitorPool: string[]):
     deviceType: pick(DEVICE_TYPES),
     source: weightedSource(),
     visitorId: pick(visitorPool),
+    // Roughly 2/3 of clicks are a real classified conversion — plausible
+    // demo data for the Conversion AMI pillar and the dashboard's tracking
+    // hygiene indicator, not just a raw click count.
+    metadata: isClick ? { conversionType: Math.random() < 0.65 ? pick(DEMO_CONVERSION_TYPES.slice(0, 5)) : 'generic' } : {},
   };
 }
 

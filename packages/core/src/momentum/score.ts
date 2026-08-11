@@ -1,25 +1,13 @@
-import type { DailyPageMetrics, ExternalMomentumSignal, MomentumBreakdown, MomentumResult } from './types';
-
-type CoreMomentumBreakdown = Omit<MomentumBreakdown, 'externalMomentum'>;
-
-/** Weighted formula for Link's own 6 factors — unchanged by the optional Viberate blend below. */
-export const MOMENTUM_WEIGHTS: Record<keyof CoreMomentumBreakdown, number> = {
-  trafficAcceleration: 0.3,
-  uniqueFanGrowth: 0.2,
-  geographicExpansion: 0.15,
-  platformDiversity: 0.15,
-  clickDepth: 0.1,
-  retention: 0.1,
-};
-
-/**
- * Weight given to `externalMomentum` (Viberate) when present. The 6 core
- * weights above are *not* rescaled to compensate — a page without a
- * Viberate connection gets `score = coreWeightedSum` exactly as before this
- * factor existed; a page with one gets a blended score. This keeps the
- * existing formula byte-for-byte stable for the vast majority of pages.
- */
-export const EXTERNAL_MOMENTUM_WEIGHT = 0.15;
+import {
+  AMI_PILLAR_WEIGHTS,
+  type DailyPageMetrics,
+  type ExternalMomentumSignal,
+  type MomentumBreakdown,
+  type MomentumConfidence,
+  type MomentumDataSource,
+  type MomentumResult,
+  type PillarScore,
+} from './types';
 
 const KNOWN_SOURCES = ['direct', 'social', 'search', 'referral'] as const;
 const MAX_SOURCE_ENTROPY = Math.log(KNOWN_SOURCES.length);
@@ -61,17 +49,98 @@ function platformDiversityScore(sources: Record<string, number>): number {
   return clamp((entropy / MAX_SOURCE_ENTROPY) * 100, 0, 100);
 }
 
+function pillar(value: number, weight: number, source: MomentumDataSource): PillarScore {
+  return { value: clamp(value, 0, 100), weight, source };
+}
+
+/** How far and wide the page's traffic spreads: acceleration, geographic reach, and channel diversity. */
+function reachPillar(current: DailyPageMetrics, trailing7: DailyPageMetrics[], trailing30: DailyPageMetrics[]): PillarScore {
+  const trafficAcceleration = accelerationScore(current.visits, average(trailing7.map((d) => d.visits)));
+
+  const knownCountries = new Set(trailing30.flatMap((d) => d.countries));
+  const newCountryCount = current.countries.filter((c) => !knownCountries.has(c)).length;
+  const geographicExpansion = trailing30.length === 0 ? 50 : clamp(50 + newCountryCount * 15, 0, 100);
+
+  const platformDiversity = platformDiversityScore(current.sources);
+
+  const value = trafficAcceleration * 0.5 + geographicExpansion * 0.3 + platformDiversity * 0.2;
+  const source: MomentumDataSource = trailing7.length === 0 ? 'estimated' : 'first-party';
+  return pillar(value, AMI_PILLAR_WEIGHTS.reach, source);
+}
+
+/** How deeply fans engage once they land — the click-through ratio. Zero visits means there's nothing to measure engagement from at all, not a real "0%". */
+function engagementPillar(current: DailyPageMetrics): PillarScore {
+  if (current.visits === 0) return pillar(0, AMI_PILLAR_WEIGHTS.engagement, 'estimated');
+  const clickDepth = (current.clicks / current.visits) * 200;
+  return pillar(clickDepth, AMI_PILLAR_WEIGHTS.engagement, 'first-party');
+}
+
+/** How often a visit turns into a real, classified conversion (stream/pre-save/ticket/merch/follow) rather than just a click. */
+function conversionPillar(current: DailyPageMetrics): PillarScore {
+  if (current.visits === 0) return pillar(0, AMI_PILLAR_WEIGHTS.conversion, 'estimated');
+  const value = (current.conversions / current.visits) * 300;
+  return pillar(value, AMI_PILLAR_WEIGHTS.conversion, 'first-party');
+}
+
+/** How much traffic returns rather than bouncing once. */
+function consistencyPillar(current: DailyPageMetrics): PillarScore {
+  if (current.uniqueVisitors === 0) return pillar(0, AMI_PILLAR_WEIGHTS.consistency, 'estimated');
+  const value = (current.returningVisitors / current.uniqueVisitors) * 150;
+  return pillar(value, AMI_PILLAR_WEIGHTS.consistency, 'first-party');
+}
+
 /**
- * Computes a page's daily Artist Momentum Index: not "how big" a page is,
- * but how much its traffic is accelerating right now, using only the
- * current day's metrics plus trailing history for context. Pure and
- * side-effect-free — the ETL cron (apps/web) is responsible for gathering
- * `current`/`history` from Postgres and persisting the result.
+ * Growth outside the page itself. With a connected Viberate match, blends
+ * that third-party cross-platform acceleration in as the dominant signal
+ * over an organic fan-growth proxy; without one, the proxy is all there is.
+ */
+function amplificationPillar(
+  current: DailyPageMetrics,
+  trailing7: DailyPageMetrics[],
+  external: ExternalMomentumSignal | undefined,
+): PillarScore {
+  const organicProxy = accelerationScore(current.uniqueVisitors, average(trailing7.map((d) => d.uniqueVisitors)));
+
+  if (!external) {
+    const source: MomentumDataSource = trailing7.length === 0 ? 'estimated' : 'first-party';
+    return pillar(organicProxy, AMI_PILLAR_WEIGHTS.amplification, source);
+  }
+
+  const externalAcceleration = accelerationScore(external.current, average(external.history.slice(-7)));
+  const value = organicProxy * 0.4 + externalAcceleration * 0.6;
+  return pillar(value, AMI_PILLAR_WEIGHTS.amplification, 'third-party');
+}
+
+function calculateConfidence(breakdown: MomentumBreakdown): MomentumConfidence {
+  const shareOf = (source: MomentumDataSource) =>
+    Object.values(breakdown)
+      .filter((p) => p.source === source)
+      .reduce((sum, p) => sum + p.weight, 0);
+
+  const firstPartyShare = shareOf('first-party');
+  const thirdPartyShare = shareOf('third-party');
+  const estimatedShare = shareOf('estimated');
+
+  return {
+    value: Math.round(firstPartyShare * 100),
+    firstPartyShare,
+    thirdPartyShare,
+    estimatedShare,
+  };
+}
+
+/**
+ * Computes a page's daily Artist Momentum Index across the 5 weighted AMI
+ * pillars (Reach 25%, Engagement 20%, Conversion 20%, Consistency 15%,
+ * Amplification 20% — see `AMI_PILLAR_WEIGHTS`): not "how big" a page is,
+ * but how much its traffic is accelerating and converting right now, using
+ * only the current day's metrics plus trailing history for context. Pure
+ * and side-effect-free — the ETL cron (apps/web) is responsible for
+ * gathering `current`/`history` from Postgres and persisting the result.
  *
  * `external` is optional Viberate rank/score trend data, present only for
- * pages with a connected match. When absent, the score is exactly today's
- * 6-factor formula with no change — the blend below only ever applies on
- * top of it, never in place of it.
+ * pages with a connected match — it strengthens the Amplification pillar
+ * but never fully replaces the organic signal beneath it.
  */
 export function calculateMomentumScore(
   current: DailyPageMetrics,
@@ -81,53 +150,19 @@ export function calculateMomentumScore(
   const trailing7 = history.slice(-7);
   const trailing30 = history.slice(-30);
 
-  const trafficAcceleration = accelerationScore(current.visits, average(trailing7.map((d) => d.visits)));
-  const uniqueFanGrowth = accelerationScore(
-    current.uniqueVisitors,
-    average(trailing7.map((d) => d.uniqueVisitors)),
-  );
-
-  const knownCountries = new Set(trailing30.flatMap((d) => d.countries));
-  const newCountryCount = current.countries.filter((c) => !knownCountries.has(c)).length;
-  const geographicExpansion =
-    trailing30.length === 0 ? 50 : clamp(50 + newCountryCount * 15, 0, 100);
-
-  const platformDiversity = platformDiversityScore(current.sources);
-
-  const clickDepth = current.visits === 0 ? 0 : clamp((current.clicks / current.visits) * 200, 0, 100);
-
-  const retention =
-    current.uniqueVisitors === 0 ? 0 : clamp((current.returningVisitors / current.uniqueVisitors) * 150, 0, 100);
-
-  const coreBreakdown: CoreMomentumBreakdown = {
-    trafficAcceleration,
-    uniqueFanGrowth,
-    geographicExpansion,
-    platformDiversity,
-    clickDepth,
-    retention,
+  const breakdown: MomentumBreakdown = {
+    reach: reachPillar(current, trailing7, trailing30),
+    engagement: engagementPillar(current),
+    conversion: conversionPillar(current),
+    consistency: consistencyPillar(current),
+    amplification: amplificationPillar(current, trailing7, external),
   };
 
-  const coreWeightedSum = Object.entries(coreBreakdown).reduce(
-    (sum, [key, value]) => sum + value * MOMENTUM_WEIGHTS[key as keyof CoreMomentumBreakdown],
+  const score = clamp(
+    Object.values(breakdown).reduce((sum, p) => sum + p.value * p.weight, 0),
     0,
+    100,
   );
 
-  let score: number;
-  let externalMomentum: number | undefined;
-  if (external) {
-    externalMomentum = accelerationScore(external.current, average(external.history.slice(-7)));
-    score = clamp(
-      coreWeightedSum * (1 - EXTERNAL_MOMENTUM_WEIGHT) + externalMomentum * EXTERNAL_MOMENTUM_WEIGHT,
-      0,
-      100,
-    );
-  } else {
-    score = clamp(coreWeightedSum, 0, 100);
-  }
-
-  const breakdown: MomentumBreakdown =
-    externalMomentum !== undefined ? { ...coreBreakdown, externalMomentum } : coreBreakdown;
-
-  return { score: Math.round(score), breakdown };
+  return { score: Math.round(score), breakdown, confidence: calculateConfidence(breakdown) };
 }

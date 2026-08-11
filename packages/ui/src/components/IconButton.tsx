@@ -9,8 +9,8 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
 }
 
 const variantClasses: Record<NonNullable<IconButtonProps['variant']>, string> = {
-  ghost: 'text-white/60 hover:bg-white/10 hover:text-white',
-  secondary: 'bg-white/8 text-white hover:bg-white/14',
+  ghost: 'text-ink-muted hover:bg-white/8 hover:text-ink',
+  secondary: 'bg-white/7 text-ink hover:bg-white/12',
   danger: 'text-red-400/70 hover:bg-red-500/15 hover:text-red-300',
 };
 

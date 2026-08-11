@@ -42,18 +42,18 @@ export function SortableBlockCard({
               type="button"
               {...attributes}
               {...listeners}
-              className="cursor-grab touch-none text-white/30 transition-colors hover:text-white/60 active:cursor-grabbing"
+              className="cursor-grab touch-none text-ink-faint transition-colors hover:text-ink-muted active:cursor-grabbing"
               aria-label="Drag to reorder"
             >
               <GripVertical className="size-4" />
             </button>
             {Icon ? (
-              <span className="flex size-8 items-center justify-center rounded-full bg-white/8 text-white/60">
+              <span className="flex size-8 items-center justify-center rounded-full bg-white/8 text-ink-muted">
                 <Icon className="size-4" />
               </span>
             ) : null}
             <div>
-              <p className="text-sm font-medium capitalize text-white">{type.replace('-', ' ')}</p>
+              <p className="text-sm font-medium capitalize text-ink">{type.replace('-', ' ')}</p>
               {!isEnabled ? (
                 <Badge tone="neutral" className="mt-0.5">
                   Hidden

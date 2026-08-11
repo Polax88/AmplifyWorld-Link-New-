@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, Lock, Check } from 'lucide-react';
-import { THEME_PRESETS } from '@amplifyworld/core';
+import { THEME_PRESETS, isProUser } from '@amplifyworld/core';
 import { Button, Input, Textarea, Card, cn } from '@amplifyworld/ui';
 import { trpc } from '../lib/trpc/client';
 
@@ -34,6 +34,7 @@ export function PageSettingsForm({
   const [themeKey, setThemeKey] = useState(initialThemeKey);
   const [layout, setLayout] = useState<'standard' | 'compact'>(initialLayout);
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
+  const pro = isProUser(unlockedThemes);
 
   const suggestBio = trpc.page.suggestBio.useQuery({ pageId }, { enabled: false });
   const update = trpc.page.update.useMutation({ onSuccess: onSaved });
@@ -144,18 +145,32 @@ export function PageSettingsForm({
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium text-white/70">Layout</label>
         <div className="flex gap-2">
-          {(['standard', 'compact'] as const).map((option) => (
-            <Button
-              key={option}
-              type="button"
-              variant={layout === option ? 'secondary' : 'outline'}
-              size="sm"
-              onClick={() => setLayout(option)}
-            >
-              {option === 'standard' ? 'Standard' : 'Compact'}
-            </Button>
-          ))}
+          {(['standard', 'compact'] as const).map((option) => {
+            const locked = option === 'compact' && !pro;
+            return (
+              <Button
+                key={option}
+                type="button"
+                variant={layout === option ? 'secondary' : 'outline'}
+                size="sm"
+                icon={locked ? <Lock className="size-3.5" /> : undefined}
+                disabled={locked}
+                onClick={() => !locked && setLayout(option)}
+              >
+                {option === 'standard' ? 'Standard' : 'Compact'}
+              </Button>
+            );
+          })}
         </div>
+        {!pro ? (
+          <p className="text-xs text-white/35">
+            Compact layout is a Pro perk —{' '}
+            <Link href="/dashboard/upgrade" className="text-white/50 underline hover:text-white">
+              unlock with $AMPS
+            </Link>
+            .
+          </p>
+        ) : null}
       </div>
 
       {update.error ? <Card className="py-2 text-xs text-red-300">{update.error.message}</Card> : null}

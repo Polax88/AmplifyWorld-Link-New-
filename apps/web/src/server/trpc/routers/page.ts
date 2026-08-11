@@ -1,7 +1,15 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import type { Prisma } from '@amplifyworld/database';
-import { domainEvents, blockRegistry, templateRegistry, pageThemeSchema, getThemePreset } from '@amplifyworld/core';
+import {
+  domainEvents,
+  blockRegistry,
+  templateRegistry,
+  pageThemeSchema,
+  getThemePreset,
+  isProUser,
+  FREE_PLAN_PUBLISHED_PAGE_LIMIT,
+} from '@amplifyworld/core';
 import { router, protectedProcedure, publicProcedure } from '../trpc';
 import type { Context } from '../context';
 import { isDemoMode } from '../../../env';
@@ -19,13 +27,16 @@ export const pageRouter = router({
     }),
   ),
 
-  /** Metadata for every registered starter template, used by the "start from template" option. */
+  /** The 4 free-tier page templates (Minimal Links, Release Drop, Tour Dates, Merch Drop) — used by the page-template picker. */
   listAvailableTemplates: publicProcedure.query(() =>
-    templateRegistry.list().map((template) => ({
-      key: template.key,
-      displayName: template.displayName,
-      description: template.description,
-    })),
+    templateRegistry
+      .list()
+      .filter((template) => template.isPageTemplate)
+      .map((template) => ({
+        key: template.key,
+        displayName: template.displayName,
+        description: template.description,
+      })),
   ),
 
   getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
@@ -84,12 +95,19 @@ export const pageRouter = router({
       // A premium theme can only be applied once the owner has spent AMPS
       // to unlock it (see amps.unlockTheme) — enforced here too, not just
       // by disabling the option client-side, since this is the one place
-      // that actually persists the choice.
+      // that actually persists the choice. The compact layout is likewise a
+      // Pro perk — free-tier customization stops at title/avatar/bio/accent
+      // color/block order (see `isProUser`); layout is "deeper
+      // customization", same bucket as the premium theme packs.
       if (theme) {
         const user = await ctx.prisma.user.findUniqueOrThrow({ where: { id: page.ownerId } });
         const preset = getThemePreset(theme.themeKey);
+        const pro = isProUser(user.unlockedThemes);
         if (preset.isPremium && !user.unlockedThemes.includes(preset.key)) {
           throw new TRPCError({ code: 'FORBIDDEN', message: `"${preset.displayName}" hasn't been unlocked yet.` });
+        }
+        if (theme.layout === 'compact' && !pro) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'The compact layout is a Pro perk — unlock by spending $AMPS.' });
         }
       }
 
@@ -117,6 +135,26 @@ export const pageRouter = router({
     .input(z.object({ id: z.string(), status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']) }))
     .mutation(async ({ ctx, input }) => {
       const page = await assertOwnership(ctx, input.id);
+
+      // Free plan: 1 published page. Publishing a 2nd (or Nth) page requires
+      // Pro — the existing $AMPS mechanic (spending AMPS to unlock any
+      // premium theme). Only checked when actually *activating* a publish,
+      // never when unpublishing/archiving.
+      if (input.status === 'PUBLISHED' && page.status !== 'PUBLISHED') {
+        const user = await ctx.prisma.user.findUniqueOrThrow({ where: { id: page.ownerId } });
+        if (!isProUser(user.unlockedThemes)) {
+          const otherPublishedCount = await ctx.prisma.page.count({
+            where: { ownerId: page.ownerId, status: 'PUBLISHED', id: { not: page.id } },
+          });
+          if (otherPublishedCount >= FREE_PLAN_PUBLISHED_PAGE_LIMIT) {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message: `The free plan allows ${FREE_PLAN_PUBLISHED_PAGE_LIMIT} published page. Unlock Pro (spend $AMPS) to publish more.`,
+            });
+          }
+        }
+      }
+
       const updated = await ctx.prisma.page.update({
         where: { id: input.id },
         data: { status: input.status },
@@ -133,11 +171,16 @@ export const pageRouter = router({
     }),
 
   /**
-   * Seeds a freshly-created (empty) page with a starter template's blocks —
-   * the quick alternative to the AI onboarding wizard for the blank-canvas
-   * "New page" flow. Slots the template can't fill without artist input
-   * (e.g. social handles) are silently skipped rather than shipped invalid;
-   * the wizard is the richer path for that.
+   * Applies a page template's "sensible default block order/emphasis" for
+   * its use case. On a freshly-created (empty) page, seeds its blocks
+   * outright — the quick alternative to the AI onboarding wizard. On a page
+   * that already has blocks, switching templates never creates or deletes
+   * anything (free-tier customization is limited to reordering *existing*
+   * blocks) — it only reorders them so blocks matching the template's
+   * leading types (e.g. Tour Dates' ticket links) move to the front, in the
+   * template's own order; anything the template doesn't mention keeps its
+   * relative order at the end. Always records `templateKey` so the picker
+   * can show which template is active.
    */
   applyTemplate: protectedProcedure
     .input(z.object({ pageId: z.string(), templateKey: z.string() }))
@@ -145,28 +188,50 @@ export const pageRouter = router({
       await assertOwnership(ctx, input.pageId);
       const template = templateRegistry.require(input.templateKey);
 
-      const validatedBlocks = template.blocks.flatMap((seed) => {
-        try {
-          return [{ type: seed.type, config: blockRegistry.parseConfig(seed.type, seed.config) }];
-        } catch {
-          return [];
-        }
+      const existingBlocks = await ctx.prisma.block.findMany({
+        where: { pageId: input.pageId },
+        orderBy: { position: 'asc' },
       });
 
-      if (validatedBlocks.length === 0) return { success: true };
+      if (existingBlocks.length === 0) {
+        const validatedBlocks = template.blocks.flatMap((seed) => {
+          try {
+            return [{ type: seed.type, config: blockRegistry.parseConfig(seed.type, seed.config) }];
+          } catch {
+            return [];
+          }
+        });
 
-      await ctx.prisma.$transaction(
-        validatedBlocks.map((block, position) =>
-          ctx.prisma.block.create({
-            data: {
-              pageId: input.pageId,
-              type: block.type,
-              config: block.config as Prisma.InputJsonValue,
-              position,
-            },
-          }),
-        ),
+        await ctx.prisma.$transaction([
+          ...validatedBlocks.map((block, position) =>
+            ctx.prisma.block.create({
+              data: {
+                pageId: input.pageId,
+                type: block.type,
+                config: block.config as Prisma.InputJsonValue,
+                position,
+              },
+            }),
+          ),
+          ctx.prisma.page.update({ where: { id: input.pageId }, data: { templateKey: template.key } }),
+        ]);
+
+        return { success: true };
+      }
+
+      const typeRank = new Map(
+        Array.from(new Set(template.blocks.map((seed) => seed.type))).map((type, index) => [type, index]),
       );
+      const reordered = existingBlocks
+        .map((block, originalIndex) => ({ block, originalIndex, rank: typeRank.get(block.type) ?? Infinity }))
+        .sort((a, b) => a.rank - b.rank || a.originalIndex - b.originalIndex);
+
+      await ctx.prisma.$transaction([
+        ...reordered.map(({ block }, position) =>
+          ctx.prisma.block.update({ where: { id: block.id }, data: { position } }),
+        ),
+        ctx.prisma.page.update({ where: { id: input.pageId }, data: { templateKey: template.key } }),
+      ]);
 
       return { success: true };
     }),

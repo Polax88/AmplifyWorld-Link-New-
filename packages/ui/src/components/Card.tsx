@@ -14,8 +14,8 @@ export function Card({ className, interactive = false, ref, ...props }: CardProp
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-sm transition-all duration-150',
-        interactive && 'cursor-pointer hover:border-white/20 hover:bg-white/[0.07] active:scale-[0.99]',
+        'rounded-2xl border border-white/8 bg-white/[0.035] p-4 text-ink backdrop-blur-sm transition-all duration-150',
+        interactive && 'cursor-pointer hover:border-white/16 hover:bg-white/[0.06] active:scale-[0.99]',
         className,
       )}
       {...props}

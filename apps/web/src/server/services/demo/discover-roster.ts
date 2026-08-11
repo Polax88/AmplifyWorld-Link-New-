@@ -79,6 +79,7 @@ async function generateLightMomentumHistory(pageId: string): Promise<number> {
     const uniqueVisitors = Math.round(visits * rand(0.7, 0.9));
     const returningVisitors = Math.round(uniqueVisitors * rand(0.1, 0.35));
     const clicks = Math.round(visits * rand(0.25, 0.55));
+    const conversions = Math.round(clicks * rand(0.3, 0.65));
     const countries = pickN(COUNTRIES, randInt(1, 4));
     const sources = {
       direct: Math.round(visits * 0.35),
@@ -92,6 +93,7 @@ async function generateLightMomentumHistory(pageId: string): Promise<number> {
       uniqueVisitors,
       returningVisitors,
       clicks,
+      conversions,
       countries,
       sources,
     };
@@ -104,7 +106,7 @@ async function generateLightMomentumHistory(pageId: string): Promise<number> {
       date,
       score: result.score,
       scoreChange,
-      breakdown: { subScores: result.breakdown, metrics: current } as unknown as Prisma.InputJsonValue,
+      breakdown: { subScores: result.breakdown, confidence: result.confidence, metrics: current } as unknown as Prisma.InputJsonValue,
     });
 
     previousScore = result.score;
