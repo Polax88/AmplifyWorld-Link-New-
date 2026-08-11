@@ -1,51 +1,48 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, TrendingDown, Minus, ArrowRight, Sparkles } from 'lucide-react';
-import type { MomentumBreakdown } from '@amplifyworld/core';
+import { TrendingUp, TrendingDown, Minus, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
+import type { MomentumBreakdown, MomentumConfidence } from '@amplifyworld/core';
 import { Card, Sparkline, Badge } from '@amplifyworld/ui';
 import { trpc } from '../lib/trpc/client';
 import { ShareMomentumCardButton } from './ShareMomentumCardButton';
 
-const FACTOR_LABELS: Record<keyof MomentumBreakdown, string> = {
-  trafficAcceleration: 'Traffic acceleration',
-  uniqueFanGrowth: 'Fan growth',
-  geographicExpansion: 'Geographic reach',
-  platformDiversity: 'Platform diversity',
-  clickDepth: 'Click depth',
-  retention: 'Retention',
-  externalMomentum: 'Cross-platform momentum',
+type Pillar = keyof MomentumBreakdown;
+
+/** Fixed display order — matches the weighted order the AMI pillars are described in everywhere else (dashboard copy, docs). */
+const PILLAR_ORDER: Pillar[] = ['reach', 'engagement', 'conversion', 'consistency', 'amplification'];
+
+const PILLAR_LABELS: Record<Pillar, string> = {
+  reach: 'Reach',
+  engagement: 'Engagement',
+  conversion: 'Conversion',
+  consistency: 'Consistency',
+  amplification: 'Amplification',
 };
 
-const FACTOR_ORDER: Array<keyof MomentumBreakdown> = [
-  'trafficAcceleration',
-  'uniqueFanGrowth',
-  'geographicExpansion',
-  'platformDiversity',
-  'clickDepth',
-  'retention',
-  'externalMomentum',
-];
+const PILLAR_DESCRIPTIONS: Record<Pillar, string> = {
+  reach: 'How far and wide your traffic spreads — acceleration, geography, channels.',
+  engagement: 'How deeply fans engage with your page once they land.',
+  conversion: 'How often a visit turns into a real action — stream, pre-save, ticket, merch, follow.',
+  consistency: 'How much of your traffic returns rather than bouncing once.',
+  amplification: "Growth outside your page — cross-platform signal when connected, organic fan growth otherwise.",
+};
 
-/** Below this, a sub-score is "low" enough to surface an action prompt rather than just the number. */
+/** Below this, a pillar is "low" enough to surface an action prompt rather than just the number. */
 const LOW_SCORE_THRESHOLD = 45;
 
-type ActionableFactor = Exclude<keyof MomentumBreakdown, 'externalMomentum'>;
+const PILLAR_ACTIONS: Record<Pillar, (pageId: string) => { label: string; href: string }> = {
+  reach: () => ({ label: 'Boost this page on Discover', href: '/dashboard/discover' }),
+  engagement: (pageId) => ({ label: 'Add a smart link', href: `/dashboard/${pageId}#smart-links` }),
+  conversion: (pageId) => ({ label: 'Classify your links', href: `/dashboard/${pageId}#smart-links` }),
+  consistency: (pageId) => ({ label: 'Create a Fan Pass', href: `/dashboard/${pageId}/passes` }),
+  amplification: (pageId) => ({ label: 'Connect more platforms', href: `/dashboard/${pageId}#connected-platforms` }),
+};
 
-/** Where a low sub-score sends the artist to actually do something about it — externalMomentum gets its own dedicated Viberate prompt instead (see CrossPlatformRow). */
-const FACTOR_ACTIONS: Record<ActionableFactor, (pageId: string) => { label: string; href: string }> = {
-  retention: (pageId) => ({ label: 'Create a Fan Pass', href: `/dashboard/${pageId}/passes` }),
-  trafficAcceleration: () => ({ label: 'Boost this page on Discover', href: '/dashboard/discover' }),
-  uniqueFanGrowth: (pageId) => ({ label: 'Add a smart link', href: `/dashboard/${pageId}#smart-links` }),
-  clickDepth: (pageId) => ({ label: 'Add a smart link', href: `/dashboard/${pageId}#smart-links` }),
-  geographicExpansion: (pageId) => ({
-    label: 'Connect more platforms',
-    href: `/dashboard/${pageId}#connected-platforms`,
-  }),
-  platformDiversity: (pageId) => ({
-    label: 'Connect more platforms',
-    href: `/dashboard/${pageId}#connected-platforms`,
-  }),
+const SOURCE_BADGE: Record<MomentumBreakdown['reach']['source'], { label: string; tone: 'brand' | 'neutral' }> = {
+  'first-party': { label: 'Your data', tone: 'brand' },
+  'third-party': { label: 'Viberate', tone: 'brand' },
+  estimated: { label: 'Estimated', tone: 'neutral' },
 };
 
 function ActionChip({ href, label }: { href: string; label: string }) {
@@ -60,31 +57,51 @@ function ActionChip({ href, label }: { href: string; label: string }) {
   );
 }
 
-function BreakdownRow({ pageId, factor, value }: { pageId: string; factor: keyof MomentumBreakdown; value: number }) {
-  const isLow = value < LOW_SCORE_THRESHOLD;
-  const action = factor !== 'externalMomentum' ? FACTOR_ACTIONS[factor](pageId) : null;
+function PillarRow({
+  pageId,
+  pillar,
+  score,
+  viberateConnected,
+}: {
+  pageId: string;
+  pillar: Pillar;
+  score: MomentumBreakdown[Pillar];
+  viberateConnected: boolean;
+}) {
+  const isLow = score.value < LOW_SCORE_THRESHOLD;
+  const action = PILLAR_ACTIONS[pillar](pageId);
+  const showConnectViberatePrompt = pillar === 'amplification' && !viberateConnected;
 
   return (
     <div className="flex flex-col gap-1 text-xs">
       <div className="flex items-center gap-3">
-        <span className="w-36 shrink-0 text-white/60">
-          {FACTOR_LABELS[factor]}
-          {factor === 'externalMomentum' ? (
-            <span className="ml-1.5 rounded-full bg-brand-500/15 px-1.5 py-0.5 text-[10px] font-medium text-brand-400">
-              via Viberate
-            </span>
-          ) : null}
+        <span className="w-32 shrink-0 text-white/60" title={PILLAR_DESCRIPTIONS[pillar]}>
+          {PILLAR_LABELS[pillar]}
+          <span className="ml-1.5 text-[10px] text-white/30">{Math.round(score.weight * 100)}%</span>
         </span>
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/8">
           <div
             className={isLow ? 'h-full rounded-full bg-amber-400' : 'h-full rounded-full bg-brand-400'}
-            style={{ width: `${Math.round(value)}%` }}
+            style={{ width: `${Math.round(score.value)}%` }}
           />
         </div>
-        <span className="w-7 shrink-0 text-right tabular-nums text-white/70">{Math.round(value)}</span>
+        <span className="w-7 shrink-0 text-right tabular-nums text-white/70">{Math.round(score.value)}</span>
+        <Badge tone={SOURCE_BADGE[score.source].tone} className="shrink-0">
+          {SOURCE_BADGE[score.source].label}
+        </Badge>
       </div>
-      {isLow && action ? (
-        <div className="ml-[9.5rem]">
+      {showConnectViberatePrompt ? (
+        <div className="ml-[8.5rem]">
+          <Link
+            href={`/dashboard/${pageId}#connected-platforms` as never}
+            className="flex w-fit items-center gap-1 rounded-full border border-brand-400/25 bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-300 transition-colors hover:bg-brand-500/20"
+          >
+            Connect Viberate for a cross-platform signal
+            <ArrowRight className="size-2.5" />
+          </Link>
+        </div>
+      ) : isLow ? (
+        <div className="ml-[8.5rem]">
           <ActionChip href={action.href} label={action.label} />
         </div>
       ) : null}
@@ -92,40 +109,38 @@ function BreakdownRow({ pageId, factor, value }: { pageId: string; factor: keyof
   );
 }
 
-/** Dedicated externalMomentum treatment — a Viberate connection prompt, not the generic low-score action mechanism. */
-function CrossPlatformRow({
-  pageId,
-  value,
-  viberateConnected,
-}: {
-  pageId: string;
-  value: number;
-  viberateConnected: boolean;
-}) {
-  if (viberateConnected) {
-    return <BreakdownRow pageId={pageId} factor="externalMomentum" value={value} />;
-  }
+function confidenceLabel(value: number): { text: string; tone: 'success' | 'warning' | 'neutral' } {
+  if (value >= 70) return { text: 'High confidence', tone: 'success' };
+  if (value >= 40) return { text: 'Medium confidence', tone: 'warning' };
+  return { text: 'Low confidence', tone: 'neutral' };
+}
+
+function ConfidenceBar({ confidence }: { confidence: MomentumConfidence }) {
+  const { text, tone } = confidenceLabel(confidence.value);
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-brand-400/20 bg-brand-500/5 p-2 text-xs">
-      <div className="flex items-center gap-3">
-        <span className="w-36 shrink-0 text-white/60">{FACTOR_LABELS.externalMomentum}</span>
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/8">
-          <div className="h-full rounded-full bg-white/15" style={{ width: '0%' }} />
-        </div>
-        <span className="w-7 shrink-0 text-right tabular-nums text-white/40">—</span>
+    <div className="flex flex-col gap-1.5 border-t border-white/8 pt-3">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40">
+          <ShieldCheck className="size-3.5" />
+          Confidence
+        </span>
+        <Badge tone={tone}>{confidence.value}% · {text}</Badge>
       </div>
-      <Link
-        href={`/dashboard/${pageId}#connected-platforms` as never}
-        className="ml-[9.5rem] flex w-fit items-center gap-1 rounded-full border border-brand-400/25 bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-300 transition-colors hover:bg-brand-500/20"
-      >
-        Connect socials to boost accuracy (+15% score precision)
-        <ArrowRight className="size-2.5" />
-      </Link>
+      <div className="flex h-1.5 overflow-hidden rounded-full bg-white/8">
+        <div className="h-full bg-brand-400" style={{ width: `${confidence.firstPartyShare * 100}%` }} />
+        <div className="h-full bg-white/30" style={{ width: `${confidence.thirdPartyShare * 100}%` }} />
+        <div className="h-full bg-white/10" style={{ width: `${confidence.estimatedShare * 100}%` }} />
+      </div>
+      <p className="text-[11px] text-white/35">
+        {Math.round(confidence.firstPartyShare * 100)}% from your connected first-party click &amp; conversion data
+        {confidence.thirdPartyShare > 0 ? `, ${Math.round(confidence.thirdPartyShare * 100)}% from Viberate` : ''}
+        {confidence.estimatedShare > 0 ? `, ${Math.round(confidence.estimatedShare * 100)}% estimated` : ''}.
+      </p>
     </div>
   );
 }
 
-/** Per-page Artist Momentum Index panel — current score, 30-day trend, and the per-factor breakdown behind it. */
+/** Per-page Artist Momentum Index panel — current score, 30-day trend, the 5 weighted pillars behind it, and a confidence indicator. */
 export function MomentumPanel({
   pageId,
   pageTitle,
@@ -200,21 +215,20 @@ export function MomentumPanel({
 
       <div className="mt-1 flex flex-col gap-1.5 border-t border-white/8 pt-3">
         <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
-          How this score is calculated
+          The 5 AMI pillars — weight shown next to each
         </span>
-        {FACTOR_ORDER.filter((factor) => current.breakdown[factor] !== undefined).map((factor) =>
-          factor === 'externalMomentum' ? (
-            <CrossPlatformRow
-              key={factor}
-              pageId={pageId}
-              value={current.breakdown[factor] as number}
-              viberateConnected={viberateConnected}
-            />
-          ) : (
-            <BreakdownRow key={factor} pageId={pageId} factor={factor} value={current.breakdown[factor] as number} />
-          ),
-        )}
+        {PILLAR_ORDER.map((pillarKey) => (
+          <PillarRow
+            key={pillarKey}
+            pageId={pageId}
+            pillar={pillarKey}
+            score={current.breakdown[pillarKey]}
+            viberateConnected={viberateConnected}
+          />
+        ))}
       </div>
+
+      <ConfidenceBar confidence={current.confidence} />
     </Card>
   );
 }

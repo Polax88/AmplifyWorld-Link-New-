@@ -95,24 +95,25 @@ function CreatePageModal({
 }) {
   const [handle, setHandle] = useState('');
   const [title, setTitle] = useState('');
-  const [useTemplate, setUseTemplate] = useState(false);
 
-  // Only one template exists today, so this is a single checkbox rather than
-  // a picker — revisit as a proper selector once there's more than one.
+  // The 4 free-tier page templates — Minimal Links, Release Drop, Tour
+  // Dates, Merch Drop. Defaults to the first (Minimal Links); artists can
+  // switch anytime from the page editor's own template picker.
   const templates = trpc.page.listAvailableTemplates.useQuery();
-  const starterTemplate = templates.data?.[0];
+  const [templateKey, setTemplateKey] = useState<string | null>(null);
+  const selectedTemplateKey = templateKey ?? templates.data?.[0]?.key;
 
   const applyTemplate = trpc.page.applyTemplate.useMutation();
   const createPage = trpc.page.create.useMutation({
     onSuccess: async (page) => {
-      if (useTemplate && starterTemplate) {
-        await applyTemplate.mutateAsync({ pageId: page.id, templateKey: starterTemplate.key });
+      if (selectedTemplateKey) {
+        await applyTemplate.mutateAsync({ pageId: page.id, templateKey: selectedTemplateKey });
       }
       onCreated();
       onOpenChange(false);
       setHandle('');
       setTitle('');
-      setUseTemplate(false);
+      setTemplateKey(null);
     },
   });
 
@@ -144,19 +145,34 @@ function CreatePageModal({
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
-        {starterTemplate ? (
-          <label className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-            <input
-              type="checkbox"
-              checked={useTemplate}
-              onChange={(event) => setUseTemplate(event.target.checked)}
-              className="mt-0.5 size-4 rounded border-white/20 bg-transparent accent-brand-500"
-            />
-            <span className="text-sm text-white/70">
-              Start from the <strong className="text-white">{starterTemplate.displayName}</strong> template —{' '}
-              {starterTemplate.description}
-            </span>
-          </label>
+        {templates.data && templates.data.length > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-white/70">Starting template</span>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {templates.data.map((template) => (
+                <label
+                  key={template.key}
+                  className={
+                    selectedTemplateKey === template.key
+                      ? 'flex flex-col gap-0.5 rounded-xl border border-brand-400/50 bg-brand-500/10 p-2.5 text-left'
+                      : 'flex flex-col gap-0.5 rounded-xl border border-white/10 bg-white/[0.03] p-2.5 text-left'
+                  }
+                >
+                  <span className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="templateKey"
+                      checked={selectedTemplateKey === template.key}
+                      onChange={() => setTemplateKey(template.key)}
+                      className="size-3.5 accent-brand-500"
+                    />
+                    <span className="text-sm text-white">{template.displayName}</span>
+                  </span>
+                  <span className="pl-6 text-xs text-white/45">{template.description}</span>
+                </label>
+              ))}
+            </div>
+          </div>
         ) : null}
         {createPage.error ? (
           <p className="text-xs text-red-400">{createPage.error.message}</p>

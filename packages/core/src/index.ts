@@ -9,6 +9,8 @@ export * from './feature-flags/service';
 
 export * from './analytics/tracker';
 export * from './analytics/request-signals';
+export * from './analytics/conversion-types';
+export * from './analytics/utm';
 
 export * from './ai/types';
 
@@ -25,3 +27,5 @@ export * from './artist-intelligence/types';
 
 export * from './themes/types';
 export * from './themes/registry';
+
+export * from './plan';

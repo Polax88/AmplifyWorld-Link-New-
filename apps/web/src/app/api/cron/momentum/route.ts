@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma, type Prisma } from '@amplifyworld/database';
 import {
   calculateMomentumScore,
+  isConversionMetadata,
   type DailyPageMetrics,
   type ExternalMomentumSignal,
   type StoredMomentumBreakdown,
@@ -112,7 +113,11 @@ async function scorePage(
   const previousScore = priorScores[0]?.score ?? 0;
   const scoreChange = result.score - previousScore;
 
-  const breakdown: StoredMomentumBreakdown = { subScores: result.breakdown, metrics: current };
+  const breakdown: StoredMomentumBreakdown = {
+    subScores: result.breakdown,
+    confidence: result.confidence,
+    metrics: current,
+  };
 
   await prisma.pageMomentumScore.upsert({
     where: { pageId_date: { pageId, date: start } },
@@ -175,11 +180,12 @@ async function aggregateDailyMetrics(
 ): Promise<DailyPageMetrics> {
   const events = await prisma.analyticsEvent.findMany({
     where: { pageId, occurredAt: { gte: start, lt: end } },
-    select: { type: true, visitorId: true, country: true, source: true },
+    select: { type: true, visitorId: true, country: true, source: true, metadata: true },
   });
 
   const visits = events.filter((e) => e.type === 'PAGE_VIEW').length;
   const clicks = events.filter((e) => e.type === 'BLOCK_CLICK').length;
+  const conversions = events.filter((e) => e.type === 'BLOCK_CLICK' && isConversionMetadata(e.metadata)).length;
 
   const visitorIdsToday = Array.from(
     new Set(events.filter((e) => e.type === 'PAGE_VIEW' && e.visitorId).map((e) => e.visitorId as string)),
@@ -210,6 +216,7 @@ async function aggregateDailyMetrics(
     uniqueVisitors: visitorIdsToday.length,
     returningVisitors,
     clicks,
+    conversions,
     countries,
     sources,
   };

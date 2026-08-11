@@ -170,7 +170,7 @@ export function ReviewStep({
       </div>
 
       <div className="hidden justify-self-center lg:sticky lg:top-24 lg:flex">
-        <PagePreview title={state.stageName} bio={state.bio} avatarUrl={state.avatarUrl} blocks={previewBlocks} />
+        <PagePreview title={state.stageName} bio={state.bio} avatarUrl={state.avatarUrl} blocks={previewBlocks} handle={state.handle} />
       </div>
 
       <Modal
@@ -179,7 +179,7 @@ export function ReviewStep({
         title="Live preview"
         className="flex justify-center bg-transparent border-none shadow-none p-0 max-w-none w-auto"
       >
-        <PagePreview title={state.stageName} bio={state.bio} avatarUrl={state.avatarUrl} blocks={previewBlocks} />
+        <PagePreview title={state.stageName} bio={state.bio} avatarUrl={state.avatarUrl} blocks={previewBlocks} handle={state.handle} />
       </Modal>
     </div>
   );

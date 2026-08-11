@@ -58,7 +58,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ handle:
             className="animate-fade-up"
             style={{ animationDelay: `${Math.min(index, 6) * 60 + 100}ms` }}
           >
-            <BlockRenderer block={block} />
+            <BlockRenderer block={block} pageHandle={handle} />
           </div>
         ))}
       </div>

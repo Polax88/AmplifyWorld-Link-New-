@@ -44,9 +44,11 @@ describe('BlockRegistry', () => {
     const registry = new BlockRegistry();
     registerCoreBlocks(registry);
 
-    expect(registry.parseConfig('link', { label: 'Listen', url: 'https://open.spotify.com' })).toEqual(
-      { label: 'Listen', url: 'https://open.spotify.com' },
-    );
+    expect(registry.parseConfig('link', { label: 'Listen', url: 'https://open.spotify.com' })).toEqual({
+      label: 'Listen',
+      url: 'https://open.spotify.com',
+      conversionType: 'generic',
+    });
     expect(() => registry.parseConfig('link', { label: '', url: 'not-a-url' })).toThrow();
   });
 

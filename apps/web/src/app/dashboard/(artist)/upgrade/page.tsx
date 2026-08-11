@@ -56,10 +56,13 @@ export default function UpgradePage() {
             <span className="text-sm font-medium">Included with every page</span>
           </div>
           <ul className="flex flex-col gap-2 text-sm text-white/70">
+            <li>1 published page</li>
+            <li>All 4 page templates (Minimal Links, Release Drop, Tour Dates, Merch Drop)</li>
+            <li>Full AMI score, confidence indicator, and smart-link tracking</li>
             {freePresets.map((preset) => (
               <li key={preset.key} className="flex items-center gap-2">
                 <span className="size-3 rounded-full" style={{ backgroundColor: preset.accentColor }} />
-                {preset.displayName} theme
+                {preset.displayName} accent color
               </li>
             ))}
           </ul>
@@ -70,6 +73,10 @@ export default function UpgradePage() {
             <Badge tone="brand">Pro</Badge>
             <span className="text-sm font-medium">Spend $AMPS to unlock</span>
           </div>
+          <p className="text-sm text-white/70">
+            Unlocking any premium theme below also lifts the free plan&apos;s 1-published-page limit and unlocks the
+            compact layout, for as long as you hold it.
+          </p>
           <ul className="flex flex-col gap-3 text-sm">
             {proPresets.map((preset) => {
               const unlocked = unlockedThemes.includes(preset.key);

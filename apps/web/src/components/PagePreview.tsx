@@ -13,12 +13,15 @@ export function PagePreview({
   avatarUrl,
   blocks,
   theme,
+  handle,
 }: {
   title: string;
   bio?: string | null;
   avatarUrl?: string | null;
   blocks: PreviewBlock[];
   theme?: PageThemeConfig;
+  /** Seeds each smart link's automatic UTM tagging — see `BlockRenderer`. Falls back to a placeholder for previews taken before a page has a real handle yet (e.g. the onboarding wizard's review step). */
+  handle?: string;
 }) {
   const preset = getThemePreset(theme?.themeKey ?? 'brand-pink');
   const compact = theme?.layout === 'compact';
@@ -52,7 +55,7 @@ export function PagePreview({
           {blocks
             .filter((block) => block.isEnabled)
             .map((block) => (
-              <BlockRenderer key={block.id} block={block} />
+              <BlockRenderer key={block.id} block={block} pageHandle={handle ?? 'preview'} />
             ))}
           {blocks.length === 0 ? (
             <p className="text-center text-xs text-white/30">Add a block to see it here.</p>

@@ -15,13 +15,29 @@ export interface RenderableBlock {
  * Maps a persisted block's `type` to its view component. Adding a new block
  * kind means: (1) define it in `@amplifyworld/core`, (2) add a `*BlockView`
  * component, (3) add one line here. Nothing else in the render path changes.
+ * `pageHandle` is only used by the smart-link block kinds (`link`/`social`)
+ * — it seeds their automatic UTM tagging (see `LinkBlockView`/`SocialBlockView`).
  */
-export function BlockRenderer({ block }: { block: RenderableBlock }) {
+export function BlockRenderer({ block, pageHandle }: { block: RenderableBlock; pageHandle: string }) {
   switch (block.type) {
     case 'link':
-      return <LinkBlockView pageId={block.pageId} blockId={block.id} config={block.config as LinkBlockConfig} />;
+      return (
+        <LinkBlockView
+          pageId={block.pageId}
+          pageHandle={pageHandle}
+          blockId={block.id}
+          config={block.config as LinkBlockConfig}
+        />
+      );
     case 'social':
-      return <SocialBlockView config={block.config as SocialBlockConfig} />;
+      return (
+        <SocialBlockView
+          pageId={block.pageId}
+          pageHandle={pageHandle}
+          blockId={block.id}
+          config={block.config as SocialBlockConfig}
+        />
+      );
     case 'embed':
       return <EmbedBlockView config={block.config as EmbedBlockConfig} />;
     case 'gated-content':

@@ -28,6 +28,8 @@ import { ConnectedPlatformsCard } from '../../../../components/ConnectedPlatform
 import { ConnectPlatformsCard } from '../../../../components/ConnectPlatformsCard';
 import { FansCard } from '../../../../components/FansCard';
 import { PassesCard } from '../../../../components/PassesCard';
+import { TemplatePicker } from '../../../../components/TemplatePicker';
+import { TrackingHygieneCard } from '../../../../components/TrackingHygieneCard';
 import { useDashboardContext } from '../../../../components/DashboardContext';
 import { SortableBlockCard } from './SortableBlockCard';
 
@@ -135,6 +137,8 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           </div>
         </div>
 
+        {setStatus.error ? <p className="-mt-2 text-xs text-red-400">{setStatus.error.message}</p> : null}
+
         {summary.data ? (
           <div className="-mt-2 flex items-center gap-4 text-sm text-white/50">
             <span className="flex items-center gap-1.5">
@@ -149,6 +153,10 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
         ) : null}
 
         <HubWelcomeBanner pageId={pageId} />
+
+        <TemplatePicker pageId={pageId} currentTemplateKey={page.templateKey} />
+
+        <TrackingHygieneCard pageId={pageId} onFix={setEditingBlockId} />
 
         <MomentumPanel
           pageId={pageId}
@@ -249,6 +257,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           avatarUrl={page.avatarUrl}
           blocks={page.blocks}
           theme={pageThemeSchema.parse(page.theme)}
+          handle={page.handle}
         />
       </div>
 
@@ -264,6 +273,7 @@ export default function PageEditor({ params }: { params: Promise<{ pageId: strin
           avatarUrl={page.avatarUrl}
           blocks={page.blocks}
           theme={pageThemeSchema.parse(page.theme)}
+          handle={page.handle}
         />
       </Modal>
 
